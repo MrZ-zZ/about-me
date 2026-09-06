@@ -1,19 +1,24 @@
-# Python 作品集网站
+# 关于我
 
-这是一个无需后端的个人作品集模板，适合展示 Python 爬虫、自动化和数据分析项目。
+你好，我是子栖（曾钦），成都大学药学本科 2026 届，两年军旅退役。目前专注 Python 技能变现、数据自动化与 AI 应用，把重复性工作变成可复用的本地工具。
 
-## 修改内容
+## 这个仓库是什么
 
-打开 `content.js`，修改顶部的姓名、简介、邮箱、GitHub 链接，以及下面的 `projects` 项目列表。保存后刷新网页即可看到变化。
+这是“关于我”的个人作品集，用来展示 Python 项目、可交互演示和交付案例。仓库中的示例均为合成数据，默认脱敏、水印，不包含真实客户数据，也不提供可运行的数据采集入口。
 
-## 本地查看
+## 我能解决
 
-直接双击 `index.html`，即可在浏览器中打开。
+- 重复性数据整理、表格清洗、报表生成与文件批处理自动化。
+- 把零散经营数据做成可交互大屏、PDF 报告和可视化看板。
+- 用 Python + AI 完成本地报告生成、知识库检索和音视频素材处理。
 
-## 免费发布
+## 使用方式
 
-在 GitHub 创建一个公开仓库，仓库名设为 `你的GitHub用户名.github.io`。上传本文件夹的全部文件，随后进入仓库的 **Settings -> Pages**，在 **Build and deployment** 中选择 **Deploy from a branch**，分支选择 `main` 和根目录 `/ (root)`，保存。几分钟后网站网址为：
+直接打开 `index.html` 即可本地预览；也可以部署到 GitHub Pages 或 Gitee Pages。
 
-`https://你的GitHub用户名.github.io`
+## 联系方式
 
-详见教学文档：[GitHub Pages 教学文档](outputs/GitHub-Pages-作品集教学.md)。
+- GitHub：https://github.com/MrZ-zZ
+- Gitee：https://gitee.com/Mr_z-z
+- CSDN：https://blog.csdn.net/MR_oz
+- 邮箱：yi_chen77@qq.com
