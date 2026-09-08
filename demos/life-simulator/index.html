@@ -1,0 +1,155 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>子栖 · 地球人生模拟器</title>
+<style>
+:root{--bg:#05070d;--panel:rgba(5,15,18,.86);--line:#123a3f;--green:#38f7c4;--blue:#55c8ff;--purple:#b48cff;--yellow:#ffd166;--red:#ff5f7a;--muted:#7d93a8}
+*{box-sizing:border-box}
+html,body{margin:0;min-height:100vh}
+body{font-family:"Microsoft YaHei","PingFang SC",sans-serif;color:#d8fff4;background:radial-gradient(circle at 15% 10%,rgba(56,247,196,.13),transparent 24rem),radial-gradient(circle at 90% 15%,rgba(85,200,255,.11),transparent 26rem),linear-gradient(135deg,#05070d,#07131c 55%,#05070d);overflow-x:hidden}
+body::before{content:"";position:fixed;inset:0;pointer-events:none;background:repeating-linear-gradient(0deg,transparent 0 2px,rgba(56,247,196,.045) 2px 4px);z-index:1}
+body::after{content:"";position:fixed;inset:0;pointer-events:none;background:linear-gradient(transparent 50%,rgba(0,0,0,.08) 50%);background-size:100% 4px;z-index:2;opacity:.7}
+.shell{position:relative;z-index:5;width:min(1080px,94vw);margin:0 auto;padding:24px 0 42px}
+.top{display:flex;justify-content:space-between;align-items:flex-end;gap:16px;border:1px solid rgba(56,247,196,.28);border-radius:18px;padding:16px 18px;background:rgba(3,12,16,.72);box-shadow:0 0 40px rgba(56,247,196,.09)}
+.top h1{margin:0;font-size:clamp(24px,4vw,40px);letter-spacing:4px;text-shadow:0 0 18px rgba(56,247,196,.45)}
+.top p{margin:4px 0 0;color:var(--muted);font-size:12px;letter-spacing:2px}
+.top .id{color:var(--blue);font-family:Consolas,monospace;font-size:13px;text-align:right;white-space:nowrap}
+.layout{display:grid;grid-template-columns:280px 1fr;gap:14px;margin-top:14px}
+.panel{border:1px solid rgba(85,200,255,.18);border-radius:18px;background:var(--panel);padding:16px;box-shadow:0 18px 50px rgba(0,0,0,.28)}
+.panel h2{margin:0 0 12px;color:var(--blue);font-size:12px;letter-spacing:3px;text-transform:uppercase}
+.stats{display:grid;gap:12px}
+.stat-row{display:grid;grid-template-columns:48px 1fr 34px;align-items:center;gap:8px;font-size:13px}
+.stat-row .lab{color:var(--muted)}
+.stat-row .val{font-family:Consolas,monospace;color:var(--yellow);text-align:right}
+.track{height:8px;border:1px solid #1b3944;border-radius:999px;background:#06121a;overflow:hidden}
+.fill{display:block;height:100%;border-radius:999px;width:0;transition:width .45s ease}
+.f-green{background:linear-gradient(90deg,#0f6d56,var(--green))}
+.f-blue{background:linear-gradient(90deg,#0f4e6d,var(--blue))}
+.f-purple{background:linear-gradient(90deg,#54348f,var(--purple))}
+.f-yellow{background:linear-gradient(90deg,#8a6215,var(--yellow))}
+.stage{min-height:560px;display:flex;flex-direction:column}
+.stage-head{display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid rgba(56,247,196,.16);padding-bottom:12px;margin-bottom:12px;color:var(--green);letter-spacing:2px;font-size:13px}
+.stage-head span:last-child{color:var(--muted);font-size:11px}
+.log{flex:1;min-height:330px;max-height:480px;overflow:auto;background:rgba(0,0,0,.25);border:1px solid rgba(56,247,196,.1);border-radius:14px;padding:14px;font-size:13px;line-height:1.8}
+.log p{margin:0}
+.log .sys{color:var(--muted)}
+.log .good{color:var(--green)}
+.log .bad{color:var(--red)}
+.log .event{color:var(--yellow)}
+.log .info{color:var(--blue)}
+.choices{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:14px}
+.choices button{min-height:66px;border:1px solid rgba(85,200,255,.25);border-radius:14px;background:rgba(85,200,255,.08);color:#eaffff;font:inherit;cursor:pointer;line-height:1.4;transition:border-color .18s,background .18s,transform .18s}
+.choices button:hover{border-color:var(--green);background:rgba(56,247,196,.13);transform:translateY(-2px)}
+.actions{margin-top:12px;display:flex;justify-content:flex-end;gap:10px}
+.actions button{border:0;border-radius:12px;padding:11px 18px;background:linear-gradient(135deg,var(--green),var(--blue));color:#031017;font-weight:800;cursor:pointer}
+.result{border:1px solid rgba(255,209,102,.35);border-radius:16px;padding:16px;background:rgba(255,209,102,.07);color:var(--yellow);line-height:1.8}
+@media(max-width:760px){.layout{grid-template-columns:1fr}.top{flex-direction:column;align-items:flex-start}.top .id{text-align:left}.choices{grid-template-columns:1fr}}
+@media (prefers-reduced-motion: reduce){.fill{transition:none}body::after{background:none}}
+</style>
+</head>
+<body>
+<main class="shell">
+  <header class="top">
+    <div>
+      <h1>地球人生模拟器</h1>
+      <p>18–30 岁阶段选择 · 随机事件 · 多结局评级</p>
+    </div>
+    <div class="id">ID: ZIQI-2026<br/>MODE: LOCAL</div>
+  </header>
+
+  <div class="layout">
+    <aside class="panel">
+      <h2>Character State</h2>
+      <div class="stats" id="stats"></div>
+    </aside>
+
+    <section class="panel stage">
+      <div class="stage-head"><span>Life Log</span><span id="phaseText">等待启动</span></div>
+      <div class="log" id="log"></div>
+      <div class="choices" id="choices"></div>
+      <div class="actions" id="actions"></div>
+    </section>
+  </div>
+</main>
+
+<script>
+const G={age:18,skill:8,resource:4,network:4,health:6,phase:0,round:0};
+const phases=[
+  {name:"学习期",years:[18,22],label:"18-22 岁 · 积累期"},
+  {name:"职业期",years:[23,26],label:"23-26 岁 · 选择期"},
+  {name:"稳定期",years:[27,30],label:"27-30 岁 · 收获期"}
+];
+function clamp(n,a,b){return Math.max(a,Math.min(b,n));}
+function log(text,type="sys"){const p=document.createElement("p");p.className=type;p.textContent=text;const box=document.getElementById("log");box.appendChild(p);box.scrollTop=box.scrollHeight;}
+function statHTML(name,val,key,cls){return '<div class="stat-row"><span class="lab">'+name+'</span><div class="track"><i class="fill '+cls+'" style="width:'+Math.max(4,val*8)+'%"></i></div><span class="val">'+val+'</span></div>';}
+function renderStats(){document.getElementById("stats").innerHTML=statHTML("技能",G.skill,"skill","f-green")+statHTML("资源",G.resource,"resource","f-blue")+statHTML("人脉",G.network,"network","f-purple")+statHTML("状态",G.health,"health","f-yellow");}
+function clearChoices(){document.getElementById("choices").innerHTML="";document.getElementById("actions").innerHTML="";}
+function choose(opt){G.skill=clamp(G.skill+opt.s,0,15);G.resource=clamp(G.resource+opt.r,0,15);G.network=clamp(G.network+opt.n,0,15);G.health=clamp(G.health+opt.h,0,15);log(opt.text,opt.good?"good":"bad");randomEvent();}
+function randomEvent(){
+  const evs=[
+    {text:"独立完成一个小项目，作品被人看到。",m:[2,1,1,0],good:true},
+    {text:"遇到一次技术瓶颈，复盘后找到方向。",m:[1,0,0,1],good:true},
+    {text:"获得一次合作机会，人脉有所积累。",m:[0,0,2,0],good:true},
+    {text:"连续熬夜，状态略有下降。",m:[0,0,0,-2],good:false},
+    {text:"冲动消费，损失了一部分资源。",m:[0,-2,0,0],good:false},
+    {text:"错过一次展示机会，需要重新规划。",m:[0,0,-1,-1],good:false}
+  ];
+  const e=evs[Math.floor(Math.random()*evs.length)];
+  G.skill=clamp(G.skill+e.m[0],0,15);G.resource=clamp(G.resource+e.m[1],0,15);G.network=clamp(G.network+e.m[2],0,15);G.health=clamp(G.health+e.m[3],0,15);
+  log("⚡ "+e.text,e.good?"event":"bad");renderStats();advance();
+}
+function advance(){
+  G.age++;G.round++;
+  if(G.age<=phases[G.phase].years[1]&&G.round<=12){setPhase(G.phase);return;}
+  G.phase++;
+  if(G.phase<phases.length){G.round=0;setPhase(G.phase);return;}
+  ending();
+}
+function setPhase(p){
+  document.getElementById("phaseText").textContent=phases[p].label;
+  clearChoices();
+  const choices=phaseChoices(p);
+  choices.forEach(opt=>{
+    const b=document.createElement("button");b.textContent=opt.title;
+    b.addEventListener("click",()=>choose(opt));
+    document.getElementById("choices").appendChild(b);
+  });
+  log("▶ 进入【"+phases[p].name+"】","info");
+}
+function phaseChoices(p){
+  if(p===0)return [
+    {title:"扎实打基础",text:"你投入大量时间学习，技能稳步提升。",s:3,r:0,n:0,h:-1,good:true},
+    {title:"边学边接单",text:"你用实践换资源，但学习节奏被打乱。",s:1,r:3,n:1,h:-1,good:true},
+    {title:"广泛交朋友",text:"你认识了很多人，暂时还没形成作品。",s:0,r:0,n:3,h:0,good:true}
+  ];
+  if(p===1)return [
+    {title:"进入稳定岗位",text:"你获得稳定收入，但成长速度放缓。",s:1,r:3,n:1,h:0,good:true},
+    {title:"做自由职业",text:"自由度高，收入和状态都有波动。",s:2,r:2,n:2,h:-2,good:true},
+    {title:"继续深造",text:"你选择深度学习，资源暂时消耗。",s:3,r:-1,n:0,h:1,good:true}
+  ];
+  return [
+    {title:"打磨代表作品",text:"你集中精力产出代表作。",s:3,r:1,n:1,h:0,good:true},
+    {title:"扩大商业合作",text:"你投入商业场景，资源和人脉增长。",s:1,r:3,n:2,h:-1,good:true},
+    {title:"保持平衡节奏",text:"你照顾状态，稳定推进。",s:1,r:1,n:1,h:3,good:true}
+  ];
+}
+function ending(){
+  clearChoices();
+  document.getElementById("phaseText").textContent="30 岁 · 结算";
+  const score=G.skill+G.resource+G.network+G.health;
+  let grade,color,msg;
+  if(score>=44){grade="S";color="var(--green)";msg="高阶成长型：技能、作品与资源兼备，具备长期职业复利。";}
+  else if(score>=36){grade="A";color="var(--blue)";msg="稳定发展型：基础扎实，下一步适合聚焦一个商业方向。";}
+  else if(score>=28){grade="B";color="var(--yellow)";msg="探索型：路径较多但还未聚焦，需要减少摇摆并持续输出。";}
+  else{grade="C";color="var(--red)";msg="重启型：本次模拟波动较大，但真实人生仍可从下一个选择开始。";}
+  document.getElementById("choices").innerHTML='<div class="result"><b style="font-size:28px;color:'+color+'">'+grade+'</b><br/>'+msg+'<br/>最终面板：技能 '+G.skill+' | 资源 '+G.resource+' | 人脉 '+G.network+' | 状态 '+G.health+'</div>';
+  document.getElementById("actions").innerHTML='<button id="restart">重新开始</button>';
+  document.getElementById("restart").addEventListener("click",restart);
+}
+function restart(){Object.assign(G,{age:18,skill:8,resource:4,network:4,health:6,phase:0,round:0});document.getElementById("log").innerHTML="";renderStats();setPhase(0);}
+renderStats();setPhase(0);
+</script>
+</body>
+</html>

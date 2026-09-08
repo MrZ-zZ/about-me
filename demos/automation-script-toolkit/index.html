@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>子栖 · 自动化脚本工具箱</title>
+<style>
+:root{--bg:#0b1120;--panel:rgba(17,26,46,.85);--panel2:#0f172a;--text:#f8fafc;--muted:#a9b7cc;--accent:#67e8f9;--violet:#c4b5fd;--green:#6ee7b7;--warn:#fbbf24;--border:rgba(148,163,184,.22)}
+*{box-sizing:border-box}
+body{margin:0;min-height:100vh;color:var(--text);background:radial-gradient(circle at 15% 10%,rgba(34,211,238,.14),transparent 28rem),radial-gradient(circle at 85% 15%,rgba(168,85,247,.15),transparent 26rem),var(--bg);font-family:"Segoe UI","Microsoft YaHei",system-ui,sans-serif}
+.wrap{max-width:1180px;margin:0 auto;padding:36px 20px 64px}
+.badge{display:inline-flex;align-items:center;gap:8px;padding:8px 14px;border:1px solid rgba(103,232,249,.45);border-radius:999px;background:rgba(103,232,249,.08);color:#7deffd;font-size:13px}
+h1{margin:12px 0 8px;font-size:34px}
+.sub{margin:0;color:var(--muted);line-height:1.85}
+.panel{background:var(--panel);border:1px solid var(--border);border-radius:22px;padding:20px;margin-top:22px;box-shadow:0 24px 70px rgba(2,6,23,.45);backdrop-filter:blur(12px)}
+.panel-head{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:14px}
+.panel-title{font-weight:700;color:#cfe9ff}
+.tabs{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px}
+.tab{border:1px solid var(--border);background:transparent;color:var(--text);border-radius:12px;padding:10px 14px;cursor:pointer}
+.tab.active{background:var(--accent);color:#0b1120;font-weight:700}
+.toolbar{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+input{background:var(--panel2);border:1px solid var(--border);border-radius:12px;padding:10px 12px;color:var(--text);font:inherit}
+button{border:0;border-radius:12px;padding:11px 16px;background:var(--accent);color:#0b1120;font-weight:700;cursor:pointer}
+button.ghost{background:transparent;color:var(--text);border:1px solid var(--border)}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px;margin-top:18px}
+.item{background:var(--panel2);border:1px solid var(--border);border-radius:16px;padding:16px;animation:fade .4s both}
+.item:hover{border-color:var(--accent);transform:translateY(-2px);transition:.2s}
+.item b{color:#fff}
+.item p{margin:6px 0 0;color:var(--muted);font-size:13px}
+.tag{display:inline-block;margin:4px 5px 0 0;background:rgba(103,232,249,.12);color:var(--accent);border-radius:8px;padding:4px 8px;font-size:12px}
+.preview{background:#0a111f;border:1px solid var(--border);border-radius:16px;padding:14px;color:#a5f3fc;font-family:Consolas,monospace;font-size:12px;white-space:pre-wrap;max-height:280px;overflow:auto;margin-top:16px}
+.note{margin-top:20px;color:var(--muted);font-size:13px;line-height:1.7;border-left:3px solid var(--accent);padding-left:12px}
+.toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%) translateY(20px);background:#0f766e;border:1px solid #2dd4bf;color:#eafffb;padding:12px 18px;border-radius:999px;opacity:0;pointer-events:none;transition:.25s}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <span class="badge">Python 思路 · 浏览器 dry-run</span>
+  <h1>自动化脚本工具箱</h1>
+  <p class="sub">演示批量重命名、日志轮转、重复文件查找与任务队列；所有操作均为预览，不修改真实文件。</p>
+
+  <section class="panel">
+    <div class="panel-head"><span class="panel-title">工具模块</span><span class="muted">dry-run</span></div>
+    <div class="tabs" id="tabs">
+      <button class="tab active" data-view="rename">批量重命名</button>
+      <button class="tab" data-view="log">日志轮转</button>
+      <button class="tab" data-view="duplicate">重复文件查找</button>
+      <button class="tab" data-view="queue">任务队列</button>
+    </div>
+    <div id="view"></div>
+    <div class="preview" id="preview">等待执行。</div>
+  </section>
+  <div class="note">真实脚本应保留 `--dry-run`，确认无误后再执行；本 demo 不触碰你的文件系统。</div>
+</div>
+<div class="toast" id="toast"></div>
+<script>
+const $=id=>document.getElementById(id);
+const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+function toast(msg){const t=$("toast");t.textContent=msg;t.classList.add("show");setTimeout(()=>t.classList.remove("show"),1800);}
+const files=["报告01.csv","报告02.csv","截图_2026.png","笔记.txt","数据_最终.xlsx","报告01.csv","日志.log"];
+const tasks=[{name:"整理下载文件夹",status:"排队"},{name:"生成月度报表",status:"运行中"},{name:"归档旧日志",status:"完成"},{name:"备份项目源码",status:"等待"}];
+let view="rename";
+function renderView(){
+  const v=$("view");
+  if(view==="rename") v.innerHTML='<div class="toolbar"><input id="prefix" placeholder="重命名前缀，如 项目_" /><input id="date" type="checkbox" checked /> <label class="muted">追加日期</label><button id="runRename">批量重命名预览</button><button class="ghost" id="resetFiles">重置文件</button></div><div class="grid" id="list"></div>';
+  if(view==="log") v.innerHTML='<div class="toolbar"><input id="logCount" type="number" value="3" min="1" max="10" /><button id="runLog">模拟日志轮转</button><button class="ghost" id="resetLog">重置日志</button></div><div class="grid" id="list"></div>';
+  if(view==="duplicate") v.innerHTML='<div class="toolbar"><input id="dupName" placeholder="输入文件名查找重复" /><button id="runDup">查找重复</button><button class="ghost" id="resetDup">重置文件</button></div><div class="grid" id="list"></div>';
+  if(view==="queue") v.innerHTML='<div class="toolbar"><button id="runQueue">处理下一个任务</button><button class="ghost" id="resetQueue">重置队列</button></div><div class="grid" id="list"></div>';
+  renderList();
+}
+function renderList(){
+  const list=$("list");
+  if(view==="rename") list.innerHTML=files.map((name,i)=>'<div class="item"><b>'+esc(name)+'</b><p><span class="tag">待处理</span>ID '+(i+1)+'</p></div>').join("");
+  if(view==="log") list.innerHTML=Array.from({length:+$("logCount").value||3},(_,i)=>'<div class="item"><b>app-'+(i+1)+'.log</b><p><span class="tag">待轮转</span>序号 '+(i+1)+'</p></div>').join("");
+  if(view==="duplicate") list.innerHTML=files.map((name,i)=>'<div class="item"><b>'+esc(name)+'</b><p><span class="tag">待检查</span>ID '+(i+1)+'</p></div>').join("");
+  if(view==="queue") list.innerHTML=tasks.map((t,i)=>'<div class="item"><b>'+esc(t.name)+'</b><p><span class="tag">'+esc(t.status)+'</span>优先级 '+(i+1)+'</p></div>').join("");
+}
+function log(msg){const p=$("preview");p.textContent+=msg+"\n";p.scrollTop=p.scrollHeight;}
+$("tabs").addEventListener("click",e=>{const b=e.target.closest(".tab");if(!b)return;view=b.dataset.view;document.querySelectorAll(".tab").forEach(x=>x.classList.remove("active"));b.classList.add("active");$("preview").textContent="等待执行。";renderView();});
+$("view").addEventListener("click",e=>{
+  const btn=e.target.closest("button");if(!btn)return;
+  if(btn.id==="runRename"){const prefix=$("prefix").value.trim()||"项目_",date=new Date().toISOString().slice(0,10);$("preview").textContent="";files.forEach((name,i)=>log((i+1)+". "+name+" -> "+prefix+name.replace(/\.(.*)$/,($1)=>$("date").checked?"_"+date+$1:$1)));toast("重命名预览已生成");}
+  if(btn.id==="resetFiles"){files.length=0;files.push("报告01.csv","报告02.csv","截图_2026.png","笔记.txt","数据_最终.xlsx","报告01.csv","日志.log");renderList();$("preview").textContent="已重置文件。";}
+  if(btn.id==="runLog"){const n=+$("logCount").value||3;$("preview").textContent="";for(let i=n;i>=1;i--)log("app-"+(i+1)+".log -> app-"+i+".log");log("app-1.log 已删除或归档");toast("日志轮转完成");}
+  if(btn.id==="resetLog"){renderList();$("preview").textContent="已重置日志。";}
+  if(btn.id==="runDup"){const key=$("dupName").value.trim().toLowerCase();const seen={},dups=[];files.forEach((name,i)=>{if(key&&!name.toLowerCase().includes(key))return;const k=name.toLowerCase();if(seen[k])dups.push({name,id:i+1});else seen[k]=true;});$("preview").textContent=dups.length?dups.map(x=>"疑似重复：ID "+x.id+" "+x.name).join("\n"):"未发现重复文件。";toast("重复检查完成");}
+  if(btn.id==="resetDup"){renderList();$("preview").textContent="已重置文件。";}
+  if(btn.id==="runQueue"){const next=tasks.find(t=>t.status==="排队"||t.status==="等待");if(!next)return toast("队列已处理完");$("preview").textContent="正在处理："+next.name+"\n完成。";next.status="完成";renderList();toast("已处理："+next.name);}
+  if(btn.id==="resetQueue"){tasks.forEach((t,i)=>t.status=["排队","运行中","完成","等待"][i%4]);renderList();$("preview").textContent="已重置队列。";}
+});
+renderView();
+</script>
+</body>
+</html>

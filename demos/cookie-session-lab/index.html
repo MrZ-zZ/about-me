@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>子栖 · Cookie 与会话实验</title>
+<style>
+:root{--bg:#0b1120;--panel:#111a2e;--panel2:#0f172a;--text:#f8fafc;--muted:#a9b7cc;--accent:#67e8f9;--green:#6ee7b7;--warn:#fbbf24;--border:rgba(148,163,184,.22)}
+*{box-sizing:border-box}
+body{margin:0;min-height:100vh;color:var(--text);background:radial-gradient(circle at 15% 10%,rgba(34,211,238,.14),transparent 28rem),radial-gradient(circle at 85% 15%,rgba(168,85,247,.14),transparent 26rem),var(--bg);font-family:"Segoe UI","Microsoft YaHei",system-ui,sans-serif}
+.wrap{max-width:880px;margin:0 auto;padding:32px 20px 60px}
+h1{margin:0 0 8px;font-size:30px}
+.sub{margin:0;color:var(--muted);line-height:1.7}
+.panel{background:var(--panel);border:1px solid var(--border);border-radius:20px;padding:20px;margin-top:22px;box-shadow:0 24px 70px rgba(2,6,23,.45)}
+input{background:var(--panel2);border:1px solid var(--border);border-radius:12px;padding:10px 12px;color:var(--text);font:inherit;width:100%}
+button{border:0;border-radius:12px;padding:11px 16px;background:var(--accent);color:#0b1120;font-weight:600;cursor:pointer}
+button.ghost{background:transparent;color:var(--text);border:1px solid var(--border)}
+.state{display:flex;flex-wrap:wrap;gap:12px;margin-top:16px}
+.badge{background:var(--panel2);border:1px solid var(--border);border-radius:12px;padding:12px;flex:1;min-width:180px}
+.badge b{display:block;font-size:12px;color:var(--muted);margin-bottom:6px}
+.badge code{color:var(--accent);word-break:break-all}
+.history{display:grid;gap:10px;margin-top:18px}
+.log{background:var(--panel2);border:1px solid var(--border);border-radius:12px;padding:12px;color:var(--muted);font-size:13px;animation:fade .3s both}
+@keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+.note{margin-top:20px;color:var(--muted);font-size:13px;line-height:1.7;border-left:3px solid var(--accent);padding-left:12px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Cookie 与会话实验</h1>
+  <p class="sub">本地模拟登录、会话签发、有效期与退出流程，帮助理解 Cookie / Session 状态保存。</p>
+  <div class="panel">
+    <input id="user" placeholder="用户名，如 子栖" value="子栖" />
+    <div style="display:flex;gap:10px;margin-top:12px">
+      <button id="loginBtn">登录</button>
+      <button id="logoutBtn" class="ghost">退出</button>
+    </div>
+    <div class="state">
+      <div class="badge"><b>会话状态</b><code id="status">未登录</code></div>
+      <div class="badge"><b>本地令牌</b><code id="token">-</code></div>
+      <div class="badge"><b>有效期</b><code id="expiry">-</code></div>
+    </div>
+  </div>
+  <div class="history" id="history"></div>
+  <div class="note">真实会话通常由服务端签名并设置 HttpOnly Cookie；本 demo 只在浏览器内模拟，不发送任何网络请求。</div>
+</div>
+<script>
+let session=null;const logs=[];
+async function hmac(text){
+  const key=await crypto.subtle.importKey("raw",new TextEncoder().encode("demo_secret"),{name:"HMAC",hash:"SHA-256"},false,["sign"]);
+  const sig=await crypto.subtle.sign("HMAC",key,new TextEncoder().encode(text));
+  return [...new Uint8Array(sig)].map(b=>b.toString(16).padStart(2,"0")).join("").slice(0,32);
+}
+async function login(){
+  const user=document.getElementById("user").value.trim()||"子栖";
+  const issued=Date.now();const expires=issued+10*60*1000;
+  const token=user+"."+issued+"."+(await hmac(user+"."+issued));
+  session={user,issued,expires,token};logs.push("登录："+user);
+  render();
+}
+function logout(){
+  if(session)logs.push("退出："+session.user);session=null;render();
+}
+function render(){
+  document.getElementById("status").textContent=session?session.user:"未登录";
+  document.getElementById("token").textContent=session?session.token:"-";
+  document.getElementById("expiry").textContent=session?new Date(session.expires).toLocaleTimeString("zh-CN"):"-";
+  document.getElementById("history").innerHTML=logs.map(x=>'<div class="log">'+x+'</div>').join("");
+}
+document.getElementById("loginBtn").addEventListener("click",login);
+document.getElementById("logoutBtn").addEventListener("click",logout);
+render();
+</script>
+</body>
+</html>

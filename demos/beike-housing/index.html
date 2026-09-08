@@ -1,0 +1,168 @@
+﻿<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>子栖 · 房产挂牌数据整理与 Excel 交付</title>
+<style>
+:root{color-scheme:dark;--bg:#12142f;--panel:rgba(34,36,64,.88);--panel2:rgba(25,27,52,.9);--line:rgba(167,139,250,.28);--text:#eef0ff;--muted:#b7bce0;--accent:#a78bfa;--accent2:#60a5fa;--good:#34d399;--warn:#fbbf24}
+*{box-sizing:border-box}
+body{margin:0;min-height:100vh;color:var(--text);font-family:"Microsoft YaHei","PingFang SC",Arial,sans-serif;background:radial-gradient(circle at 15% 8%,rgba(167,139,250,.18),transparent 32%),radial-gradient(circle at 85% 12%,rgba(96,165,250,.16),transparent 30%),linear-gradient(145deg,#0e0f26 0%,#141736 50%,#0c0e22 100%)}
+body::before{content:"";position:fixed;inset:0;pointer-events:none;background-image:linear-gradient(rgba(255,255,255,.025) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.025) 1px,transparent 1px);background-size:44px 44px;mask-image:linear-gradient(to bottom,rgba(0,0,0,.6),transparent 70%)}
+.wrap{position:relative;z-index:1;width:min(1180px,94vw);margin:0 auto;padding:40px 0 56px}
+header{display:flex;justify-content:space-between;gap:16px;align-items:flex-start;flex-wrap:wrap}
+.badge{display:inline-flex;gap:8px;align-items:center;padding:8px 14px;border:1px solid var(--line);border-radius:999px;background:rgba(167,139,250,.12);color:#e7ddff;font-size:13px}
+h1{margin:16px 0 10px;font-size:clamp(30px,5vw,54px);letter-spacing:2px;line-height:1.08;background:linear-gradient(90deg,#fff,#d8c8ff 45%,#8ec7ff);-webkit-background-clip:text;background-clip:text;color:transparent}
+.sub{max-width:720px;margin:0;color:var(--muted);line-height:1.8}
+.panel{margin-top:22px;border:1px solid var(--line);border-radius:22px;background:var(--panel);box-shadow:0 24px 70px rgba(0,0,0,.32);overflow:hidden}
+.panel-head{display:flex;justify-content:space-between;gap:12px;align-items:center;padding:16px 18px;border-bottom:1px solid var(--line)}
+.panel-head h2{margin:0;font-size:18px}
+.note{color:var(--muted);font-size:12px}
+.filters{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;padding:16px 18px;border-bottom:1px solid var(--line)}
+label{display:grid;gap:7px;font-size:12px;color:var(--muted)}
+select,input{padding:10px 12px;border-radius:11px;border:1px solid var(--line);background:rgba(12,14,32,.72);color:var(--text);font:inherit;outline:none}
+select:focus,input:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(167,139,250,.14)}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;padding:16px 18px;border-bottom:1px solid var(--line)}
+.kpi{padding:14px;border-radius:14px;background:var(--panel2);border:1px solid rgba(167,139,250,.16)}
+.kpi small{color:var(--muted);font-size:12px}
+.kpi strong{display:block;margin-top:6px;font-size:22px;color:var(--accent2)}
+.table-wrap{overflow:auto;max-height:480px}
+table{width:100%;border-collapse:collapse;min-width:760px;font-size:13px}
+th{position:sticky;top:0;background:#202244;color:#e7ddff;text-align:left;padding:12px 14px;white-space:nowrap;border-bottom:1px solid var(--line)}
+td{padding:12px 14px;border-bottom:1px solid rgba(167,139,250,.12);color:var(--text)}
+tr:hover td{background:rgba(167,139,250,.06)}
+.chip{display:inline-block;padding:3px 8px;border-radius:999px;border:1px solid rgba(167,139,250,.25);color:#d9ccff;font-size:11px}
+.actions{display:flex;gap:10px;flex-wrap:wrap;padding:16px 18px}
+button{border:0;border-radius:12px;padding:11px 16px;background:linear-gradient(135deg,var(--accent),var(--accent2));color:#17123a;font-weight:700;cursor:pointer;transition:transform .16s ease,filter .16s ease}
+button:hover{transform:translateY(-2px);filter:brightness(1.05)}
+button.ghost{background:rgba(255,255,255,.07);color:var(--text);border:1px solid var(--line)}
+.hint{margin-top:10px;color:var(--muted);font-size:12px;text-align:right}
+@media(max-width:640px){header{display:block}.filters{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <span class="badge">✦ 合成数据 · 仅作品集展示</span>
+      <h1>房产挂牌数据整理</h1>
+      <p class="sub">把零散、格式不统一的房源信息清洗成规范表格，支持总价/单价筛选与脱敏 CSV 导出。演示数据均为虚构，不包含真实客户或平台信息。</p>
+    </div>
+  </header>
+
+  <section class="panel">
+    <div class="panel-head">
+      <h2>房源数据工作台</h2>
+      <span class="note">交付口径：数据清洗 → 去重 → 结构化 → Excel/CSV</span>
+    </div>
+    <div class="filters">
+      <label>城区
+        <select id="district"><option value="全部">全部</option><option value="锦江区">锦江区</option><option value="高新区">高新区</option><option value="武侯区">武侯区</option><option value="成华区">成华区</option></select>
+      </label>
+      <label>户型
+        <select id="layout"><option value="全部">全部</option><option value="一室">一室</option><option value="两室">两室</option><option value="三室">三室</option></select>
+      </label>
+      <label>总价上限（万元）
+        <input id="maxPrice" type="number" value="300" min="50" step="10" />
+      </label>
+      <label>关键词
+        <input id="keyword" type="search" placeholder="如：地铁、学区、精装" />
+      </label>
+    </div>
+
+    <div class="kpis" id="kpis"></div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>小区</th><th>城区</th><th>户型</th><th>面积(㎡)</th><th>总价(万)</th><th>单价(元/㎡)</th><th>挂牌时间</th><th>标签</th></tr></thead>
+        <tbody id="rows"></tbody>
+      </table>
+    </div>
+    <div class="actions">
+      <button id="exportCsv" type="button">导出脱敏 CSV</button>
+      <button id="reset" type="button" class="ghost">重置筛选</button>
+    </div>
+    <p class="hint">导出文件为合成数据，可作为“Excel 交付”的格式与清洗效果演示。</p>
+  </section>
+</div>
+
+<script>
+const districts=["锦江区","高新区","武侯区","成华区"];
+const tags=["近地铁","精装","学区","低总价","电梯房","南向"];
+const layouts=["一室","两室","三室","四室"];
+function pick(a){return a[Math.floor(Math.random()*a.length)]}
+function buildData(){
+  const rows=[];
+  for(let i=1;i<=18;i++){
+    const area=30+Math.round(Math.random()*110);
+    const district=pick(districts);
+    const unit=1.4+Math.random()*2.6;
+    const total=Math.round(area*unit);
+    rows.push({
+      id:i,
+      name:"合成小区 "+String.fromCharCode(64+i)+"期",
+      district,
+      layout:pick(layouts),
+      area,
+      total,
+      unit:Math.round(unit*10000),
+      date:`2026-0${1+Math.floor(Math.random()*8)}-${String(1+Math.floor(Math.random()*27)).padStart(2,"0")}`,
+      tags:[pick(tags),pick(tags)]
+    });
+  }
+  return rows;
+}
+const all=buildData();
+function filter(){
+  const d=document.getElementById("district").value;
+  const l=document.getElementById("layout").value;
+  const max=Number(document.getElementById("maxPrice").value||999);
+  const kw=document.getElementById("keyword").value.trim();
+  return all.filter(r=>
+    (d==="全部"||r.district===d)&&
+    (l==="全部"||r.layout===l)&&
+    r.total<=max&&
+    (!kw||(r.name+r.tags.join(" ")+r.district).includes(kw))
+  );
+}
+function fmt(n){return n.toLocaleString("zh-CN")}
+function render(){
+  const rows=filter();
+  const tb=document.getElementById("rows");tb.innerHTML="";
+  rows.forEach(r=>{
+    const tr=document.createElement("tr");
+    tr.innerHTML=`<td>${r.name}</td><td>${r.district}</td><td>${r.layout}</td><td>${r.area}</td><td>${r.total}</td><td>${fmt(r.unit)}</td><td>${r.date}</td><td>${r.tags.map(t=>'<span class="chip">'+t+'</span>').join(" ")}</td>`;
+    tb.appendChild(tr);
+  });
+  if(!rows.length){tb.innerHTML='<tr><td colspan="8" style="text-align:center;color:var(--muted)">没有符合条件的合成房源。</td></tr>'}
+  const avgUnit=rows.length?Math.round(rows.reduce((s,r)=>s+r.unit,0)/rows.length):0;
+  const avgTotal=rows.length?Math.round(rows.reduce((s,r)=>s+r.total,0)/rows.length):0;
+  const medArea=rows.length?rows.map(r=>r.area).sort((a,b)=>a-b)[Math.floor(rows.length/2)]:0;
+  document.getElementById("kpis").innerHTML=`
+    <div class="kpi"><small>挂牌房源</small><strong>${rows.length} 条</strong></div>
+    <div class="kpi"><small>平均单价</small><strong>${fmt(avgUnit)} 元/㎡</strong></div>
+    <div class="kpi"><small>平均总价</small><strong>${avgTotal} 万</strong></div>
+    <div class="kpi"><small>中位面积</small><strong>${medArea} ㎡</strong></div>`;
+}
+function exportCsv(){
+  const rows=filter();
+  const head="小区,城区,户型,面积,总价(万),单价(元/㎡),挂牌时间,标签\n";
+  const body=rows.map(r=>[r.name,r.district,r.layout,r.area,r.total,r.unit,r.date,r.tags.join("|")].join(",")).join("\n");
+  const blob=new Blob(["\uFEFF"+head+body],{type:"text/csv;charset=utf-8"});
+  const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="房产挂牌数据_脱敏演示.csv";a.click();
+}
+document.getElementById("district").addEventListener("change",render);
+document.getElementById("layout").addEventListener("change",render);
+document.getElementById("maxPrice").addEventListener("input",render);
+document.getElementById("keyword").addEventListener("input",render);
+document.getElementById("exportCsv").addEventListener("click",exportCsv);
+document.getElementById("reset").addEventListener("click",()=>{
+  document.getElementById("district").value="全部";
+  document.getElementById("layout").value="全部";
+  document.getElementById("maxPrice").value=300;
+  document.getElementById("keyword").value="";
+  render();
+});
+render();
+</script>
+</body>
+</html>

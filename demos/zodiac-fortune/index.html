@@ -1,0 +1,146 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>子栖 · 星座运势罗盘</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;min-height:100vh;overflow-x:hidden;font-family:"Microsoft YaHei","PingFang SC",Arial,sans-serif;color:#fff;background:radial-gradient(circle at 20% 20%,rgba(116,93,255,.35),transparent 30%),radial-gradient(circle at 80% 10%,rgba(255,205,112,.20),transparent 26%),radial-gradient(circle at 50% 80%,rgba(70,179,255,.22),transparent 34%),linear-gradient(135deg,#070817 0%,#10112c 48%,#050510 100%)}
+body::before{content:"";position:fixed;inset:0;pointer-events:none;background-image:radial-gradient(#fff 1px,transparent 1px),radial-gradient(#ffe9a6 1px,transparent 1px);background-size:90px 90px,150px 150px;background-position:0 0,30px 60px;opacity:.28;animation:starDrift 20s linear infinite}
+@keyframes starDrift{from{transform:translateY(0)}to{transform:translateY(-90px)}}
+.star-particles{position:fixed;inset:0;pointer-events:none;overflow:hidden;z-index:1}
+.star-particle{position:absolute;width:var(--size);height:var(--size);border-radius:50%;background:#ffe9a6;box-shadow:0 0 10px rgba(255,233,166,.8);opacity:0;animation:floatStar linear infinite}
+@keyframes floatStar{0%{transform:translateY(105vh) translateX(0);opacity:0}10%{opacity:.85}85%{opacity:.5}100%{transform:translateY(-6vh) translateX(60px);opacity:0}}
+.page{position:relative;z-index:2;width:min(1180px,94vw);margin:0 auto;padding:42px 0 52px}
+.hero{text-align:center;margin-bottom:28px}
+.badge{display:inline-flex;align-items:center;gap:8px;padding:8px 16px;border:1px solid rgba(255,225,158,.42);border-radius:999px;background:rgba(255,255,255,.08);color:#ffe7a7;letter-spacing:1px;box-shadow:0 0 25px rgba(255,209,102,.12)}
+h1{margin:18px 0 10px;font-size:clamp(34px,5vw,68px);letter-spacing:6px;background:linear-gradient(90deg,#fff,#ffe7a7,#8ed8ff);-webkit-background-clip:text;background-clip:text;color:transparent;text-shadow:0 0 35px rgba(255,225,158,.18)}
+.subtitle{margin:0;color:rgba(255,255,255,.72);font-size:17px}
+.dashboard{display:grid;grid-template-columns:1.05fr .95fr;gap:28px;align-items:center}
+.compass-wrap{min-height:570px;display:flex;align-items:center;justify-content:center;position:relative}
+.compass{position:relative;width:520px;height:520px;border-radius:50%;background:radial-gradient(circle,rgba(255,255,255,.16) 0 3px,transparent 4px),radial-gradient(circle,rgba(255,217,137,.15),transparent 35%),conic-gradient(from 0deg,rgba(255,255,255,.03),rgba(255,215,122,.14),rgba(114,191,255,.12),rgba(255,255,255,.03));border:1px solid rgba(255,235,176,.36);box-shadow:inset 0 0 70px rgba(102,127,255,.22),0 0 70px rgba(96,125,255,.24);animation:glow 5s ease-in-out infinite alternate;contain:paint;will-change:box-shadow}
+@keyframes glow{from{box-shadow:inset 0 0 70px rgba(102,127,255,.22),0 0 45px rgba(255,225,158,.14)}to{box-shadow:inset 0 0 70px rgba(102,127,255,.22),0 0 75px rgba(143,211,255,.22)}}
+.compass::before,.compass::after{content:"";position:absolute;border-radius:50%;inset:45px;border:1px dashed rgba(255,255,255,.24)}
+.compass::after{inset:112px;border-style:solid;border-color:rgba(255,226,164,.2)}
+.center-orb{position:absolute;left:50%;top:50%;width:210px;height:210px;transform:translate(-50%,-50%);border-radius:50%;background:radial-gradient(circle at 35% 25%,rgba(255,255,255,.95),rgba(255,225,153,.74) 12%,rgba(87,92,207,.42) 48%,rgba(5,7,23,.92) 78%);border:1px solid rgba(255,235,181,.5);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;text-align:center;box-shadow:inset 0 0 35px rgba(255,255,255,.16),0 0 45px rgba(255,225,158,.18)}
+.big-symbol{font-size:58px;line-height:1;text-shadow:0 0 22px rgba(255,255,255,.55)}
+.current-star{font-size:22px;font-weight:800;letter-spacing:2px}
+.num-pill{padding:6px 14px;border-radius:999px;background:rgba(0,0,0,.24);color:#ffe7a7;border:1px solid rgba(255,255,255,.18)}
+.zodiac-dot{position:absolute;left:50%;top:50%;width:84px;height:84px;margin-left:-42px;margin-top:-42px;border-radius:22px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.13);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;color:rgba(255,255,255,.74);transition:background .25s,border-color .25s,box-shadow .25s}
+.zodiac-dot.active{background:rgba(255,210,120,.22);border-color:#ffe7a7;color:#fff;box-shadow:0 0 22px rgba(255,220,120,.35)}
+.symbol{font-size:30px}
+.z-name{font-size:11px}
+.result-panel{border-radius:28px;padding:28px;background:rgba(255,255,255,.09);border:1px solid rgba(255,255,255,.16);box-shadow:0 24px 70px rgba(0,0,0,.32)}
+.result-panel h2{margin:0 0 8px;font-size:26px}
+.result-panel select{width:100%;padding:12px;border-radius:12px;border:1px solid rgba(255,255,255,.22);background:rgba(5,7,23,.55);color:#fff;font:inherit}
+.result-panel button{margin-top:16px;padding:12px 20px;border:0;border-radius:999px;background:linear-gradient(135deg,#8ed8ff,#ffd9a1);color:#111;font-weight:800;cursor:pointer}
+.meta-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:16px}
+.meta-box{background:rgba(0,0,0,.18);border:1px solid rgba(255,255,255,.12);border-radius:16px;padding:14px}
+.meta-box span{display:block;color:rgba(255,255,255,.5);font-size:12px}
+.meta-box strong{display:block;font-size:18px;margin-top:7px;color:#ffe7a7}
+.fortune-card{margin-top:18px;padding:20px;border-radius:20px;background:rgba(0,0,0,.2);border:1px solid rgba(255,255,255,.14)}
+.fortune-title{font-size:20px;font-weight:800;color:#ffe7a7}
+.fortune-text{font-size:18px;line-height:1.7;margin-top:12px}
+.luck-row{display:flex;flex-wrap:wrap;gap:8px;margin-top:16px}
+.luck-chip{padding:8px 12px;border-radius:999px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.13);font-size:13px}
+.luck-stars{color:#ffd66b}
+.knowledge{margin-top:28px;padding:22px;border-radius:24px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.12)}
+.knowledge h2{margin:0 0 14px}
+.knowledge-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:10px}
+.k-item{background:rgba(0,0,0,.16);border:1px solid rgba(255,255,255,.1);border-radius:14px;padding:12px}
+.k-item strong{color:#ffe7a7;font-size:13px}
+.k-item p{color:rgba(255,255,255,.65);font-size:12px;line-height:1.6;margin:6px 0 0}
+@media(max-width:900px){.dashboard{grid-template-columns:1fr}.compass{width:min(520px,90vw);height:min(520px,90vw)}.compass-wrap{min-height:auto}.knowledge-grid{grid-template-columns:repeat(2,1fr)}body::before{animation:none}.compass{animation:none}}
+@media(max-width:520px){.knowledge-grid{grid-template-columns:1fr}.meta-grid{grid-template-columns:1fr}}
+@media (prefers-reduced-motion: reduce){body::before,.compass{animation:none!important}}
+</style>
+</head>
+<body>
+<div class="star-particles" id="starParticles"></div>
+<main class="page">
+  <div class="hero">
+    <span class="badge">✦ 12 星座 · 随机运势编号</span>
+    <h1>今日星座运势</h1>
+    <p class="subtitle">选择一个星座，生成今日运势、幸运星级与随机运势编号。</p>
+  </div>
+
+  <div class="dashboard">
+    <div class="compass-wrap">
+      <div class="compass" id="compass"></div>
+    </div>
+    <div class="result-panel">
+      <h2>星座运势罗盘</h2>
+      <select id="signSelect" onchange="runStar()">
+        <option value="白羊座">白羊座 ♈</option><option value="金牛座">金牛座 ♉</option><option value="双子座">双子座 ♊</option><option value="巨蟹座">巨蟹座 ♋</option><option value="狮子座">狮子座 ♌</option><option value="处女座">处女座 ♍</option><option value="天秤座">天秤座 ♎</option><option value="天蝎座">天蝎座 ♏</option><option value="射手座">射手座 ♐</option><option value="摩羯座">摩羯座 ♑</option><option value="水瓶座">水瓶座 ♒</option><option value="双鱼座">双鱼座 ♓</option>
+      </select>
+      <button id="runStar" type="button" onclick="runStar()">查看今日运势</button>
+      <div class="meta-grid">
+        <div class="meta-box"><span>当前星座</span><strong id="inputStar">白羊座</strong></div>
+        <div class="meta-box"><span>今日运势编号</span><strong id="inputNum">0</strong></div>
+      </div>
+      <div class="fortune-card">
+        <div class="fortune-title" id="fortuneTitle">✦ 命中运势卡片</div>
+        <div class="fortune-text" id="fortuneText">选择星座后点击生成。</div>
+        <div class="luck-row" id="luckRow"></div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<script>
+const signs=[["白羊座","♈"],["金牛座","♉"],["双子座","♊"],["巨蟹座","♋"],["狮子座","♌"],["处女座","♍"],["天秤座","♎"],["天蝎座","♏"],["射手座","♐"],["摩羯座","♑"],["水瓶座","♒"],["双鱼座","♓"]];
+const fortunes=["运势平平，按部就班度过一天就好。","今天适合整理资料和学习新技能，效率不错。","主动表达想法，会获得正向反馈。"];
+function hash(s){let h=0;for(let i=0;i<s.length;i++)h=(h*31+s.charCodeAt(i))>>>0;return h;}
+function buildCompass(active){
+  const compass=document.getElementById("compass");compass.innerHTML="";
+  signs.forEach((item,i)=>{
+    const dot=document.createElement("div");
+    dot.className="zodiac-dot"+(item[0]===active?" active":"");
+    dot.style.transform=`rotate(${i*30}deg) translate(220px) rotate(${-i*30}deg)`;
+    dot.innerHTML=`<span class="symbol">${item[1]}</span><span class="z-name">${item[0]}</span>`;
+    compass.appendChild(dot);
+  });
+  const orb=document.createElement("div");orb.className="center-orb";
+  const sign=signs.find(x=>x[0]===active);
+  orb.innerHTML=`<div class="big-symbol">${sign[1]}</div><div class="current-star">${sign[0]}</div><div class="num-pill" id="numPill">num = 0</div>`;
+  compass.appendChild(orb);
+}
+function runStar(){
+  const sign=document.getElementById("signSelect").value;
+  const today=new Date().toISOString().slice(0,10);
+  const num=hash(sign+today)%3;
+  buildCompass(sign);
+  document.getElementById("inputStar").textContent=sign;
+  document.getElementById("inputNum").textContent=num+1;
+  document.getElementById("fortuneTitle").textContent=signs.find(x=>x[0]===sign)[1]+" 命中运势卡片";
+  document.getElementById("fortuneText").textContent=fortunes[num];
+  const labels=["平稳普通效果","稳步上升效果","惊喜高光效果"];
+  document.getElementById("luckRow").innerHTML='<span class="luck-chip">好运等级：'+labels[num]+'</span><span class="luck-chip">今日随机编号 num = '+(num+1)+'</span><span class="luck-chip luck-stars">'+("★".repeat(num+1))+"☆".repeat(2-num)+'</span>';
+}
+function createStarParticles(){
+  if(window.matchMedia("(prefers-reduced-motion: reduce)").matches)return;
+  const box=document.getElementById("starParticles");box.innerHTML="";
+  const count=window.innerWidth<760?8:16;
+  for(let i=0;i<count;i++){
+    const p=document.createElement("div");p.className="star-particle";
+    p.style.setProperty("--size",(2+Math.random()*3)+"px");
+    p.style.left=Math.random()*100+"%";
+    p.style.animationDuration=(8+Math.random()*10)+"s";
+    p.style.animationDelay=(Math.random()*8)+"s";
+    box.appendChild(p);
+  }
+}
+function bind(){
+  buildCompass("白羊座");
+  runStar();
+  createStarParticles();
+}
+if(document.readyState === "loading"){
+  document.addEventListener("DOMContentLoaded", bind);
+}else{
+  bind();
+}
+</script>
+</body>
+</html>

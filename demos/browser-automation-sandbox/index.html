@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>子栖 · 浏览器自动化实验</title>
+<style>
+:root{--bg:#0b1120;--panel:rgba(17,26,46,.85);--panel2:#0f172a;--text:#f8fafc;--muted:#a9b7cc;--accent:#67e8f9;--green:#6ee7b7;--warn:#fbbf24;--border:rgba(148,163,184,.22)}
+*{box-sizing:border-box}
+body{margin:0;min-height:100vh;color:var(--text);background:radial-gradient(circle at 15% 10%,rgba(34,211,238,.14),transparent 28rem),radial-gradient(circle at 85% 15%,rgba(168,85,247,.15),transparent 26rem),var(--bg);font-family:"Segoe UI","Microsoft YaHei",system-ui,sans-serif}
+.wrap{max-width:1180px;margin:0 auto;padding:36px 20px 64px}
+.badge{display:inline-flex;align-items:center;gap:8px;padding:8px 14px;border:1px solid rgba(103,232,249,.45);border-radius:999px;background:rgba(103,232,249,.08);color:#7deffd;font-size:13px}
+h1{margin:12px 0 8px;font-size:34px}
+.sub{margin:0;color:var(--muted);line-height:1.85}
+.panel{background:var(--panel);border:1px solid var(--border);border-radius:22px;padding:20px;margin-top:22px;box-shadow:0 24px 70px rgba(2,6,23,.45);backdrop-filter:blur(12px)}
+.panel-head{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:14px}
+.panel-title{font-weight:700;color:#cfe9ff}
+.browser{background:#070b14;border:1px solid var(--border);border-radius:16px;overflow:hidden}
+.browser-bar{display:flex;gap:8px;align-items:center;padding:10px 12px;background:#0a111f;border-bottom:1px solid var(--border)}
+.browser-bar input{flex:1;background:#0a111f;border:1px solid var(--border);color:var(--text);border-radius:9px;padding:8px 10px}
+.dot{width:12px;height:12px;border-radius:50%;background:var(--border)}
+.viewport{min-height:260px;padding:18px;background:radial-gradient(circle at 50% 20%,rgba(103,232,249,.09),transparent 22rem),#0f172a;position:relative}
+.card-line{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.mini-card{background:var(--panel2);border:1px solid var(--border);border-radius:12px;padding:12px}
+.mini-card b{color:#fff}
+.mini-card p{color:var(--muted);font-size:12px;margin:6px 0}
+.mini-card button{border:0;border-radius:8px;background:var(--accent);color:#0b1120;padding:7px 10px;cursor:pointer;font-weight:700}
+.highlight{outline:2px solid var(--warn);background:rgba(251,191,36,.08);transition:.3s}
+.actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:14px}
+button{border:0;border-radius:12px;padding:11px 16px;background:var(--accent);color:#0b1120;font-weight:700;cursor:pointer}
+button.ghost{background:transparent;color:var(--text);border:1px solid var(--border)}
+.flow{display:grid;gap:10px;margin-top:16px}
+.step{display:flex;align-items:center;gap:12px;background:var(--panel2);border:1px solid var(--border);border-radius:14px;padding:14px;opacity:.45;transition:.3s}
+.step.active{opacity:1;border-color:var(--accent)}
+.step.done{opacity:1;border-color:var(--green)}
+.step b{margin-left:auto;color:var(--green)}
+.preview{margin-top:16px;border:1px solid var(--border);border-radius:16px;background:#0f172a;padding:16px;font-family:Consolas,monospace;font-size:13px;color:#a5f3fc;white-space:pre-wrap;max-height:260px;overflow:auto}
+.note{margin-top:20px;color:var(--muted);font-size:13px;line-height:1.7;border-left:3px solid var(--accent);padding-left:12px}
+.toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%) translateY(20px);background:#0f766e;border:1px solid #2dd4bf;color:#eafffb;padding:12px 18px;border-radius:999px;opacity:0;pointer-events:none;transition:.25s}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <span class="badge">Python 思路 · 本地流程模拟</span>
+  <h1>浏览器自动化实验</h1>
+  <p class="sub">模拟打开本地合成页面、等待元素、定位按钮、点击和提取文本；用于展示自动化步骤与日志，不针对真实社交平台。</p>
+
+  <section class="panel">
+    <div class="panel-head"><span class="panel-title">本地浏览器模拟</span><span id="status" class="muted">空闲</span></div>
+    <div class="browser">
+      <div class="browser-bar"><span class="dot"></span><span class="dot"></span><span class="dot"></span><input id="url" value="local://合成数据看板" readonly /></div>
+      <div class="viewport" id="viewport">
+        <div class="card-line">
+          <div class="mini-card" data-id="a"><b>数据看板</b><p>展示经营指标与趋势。</p><button data-id="a">查看</button></div>
+          <div class="mini-card" data-id="b"><b>文件归档</b><p>演示本地文件分组逻辑。</p><button data-id="b">查看</button></div>
+          <div class="mini-card" data-id="c"><b>任务队列</b><p>显示待处理任务和状态。</p><button data-id="c">查看</button></div>
+        </div>
+      </div>
+    </div>
+    <div class="actions">
+      <button id="runBtn">运行流程</button>
+      <button class="ghost" id="pauseBtn">暂停</button>
+      <button class="ghost" id="resetBtn">重置</button>
+    </div>
+    <div class="flow" id="flow"></div>
+    <div class="preview" id="preview">等待运行。</div>
+  </section>
+  <div class="note">真实自动化通常使用 Playwright / Selenium；本 demo 展示等待、定位、点击、提取与日志记录等核心步骤。</div>
+</div>
+<div class="toast" id="toast"></div>
+<script>
+const steps=["打开合成页面","等待目标元素出现","定位按钮并点击","提取文本内容","保存为本地结果"];
+let running=false,paused=false,current=0;
+const $=id=>document.getElementById(id);
+function toast(msg){const t=$("toast");t.textContent=msg;t.classList.add("show");setTimeout(()=>t.classList.remove("show"),1800);}
+function renderFlow(active,done){$("flow").innerHTML=steps.map((s,i)=>'<div class="step '+(i===active?"active":i<done?"done":"")+'"><span class="dot"></span><span>'+s+'</span>'+(i<done?'<b>完成</b>':'')+'</div>').join("");}
+function log(msg){$("preview").textContent+=msg+"\n";$("preview").scrollTop=$("preview").scrollHeight;}
+async function wait(ms){await new Promise(r=>setTimeout(r,ms));}
+async function run(){if(running)return;running=true;current=0;$("status").textContent="运行中";$("preview").textContent="";renderFlow(0,0);for(let i=0;i<steps.length;i++){while(paused){await wait(120);}renderFlow(i,i);log("▶ "+steps[i]);if(i===0){$("url").value="local://合成数据看板";await wait(550);}if(i===1){const card=document.querySelector('[data-id="b"]');card.classList.add("highlight");await wait(700);}if(i===2){const btn=document.querySelector('button[data-id="b"]');btn.click();await wait(500);}if(i===3){log('{"title":"文件归档","status":"已提取","items":3}');await wait(400);}if(i===4){log("✅ 已保存为 local-result.json");await wait(400);}}document.querySelector('[data-id="b"]').classList.remove("highlight");renderFlow(-1,steps.length);$("status").textContent="已完成";$("url").value="local://result";running=false;}
+$("runBtn").addEventListener("click",()=>{paused=false;run();});
+$("pauseBtn").addEventListener("click",()=>{paused=!paused;$("status").textContent=paused?"已暂停":"运行中";toast(paused?"已暂停":"继续运行");});
+$("resetBtn").addEventListener("click",()=>{running=false;paused=false;current=0;$("preview").textContent="等待运行。";$("status").textContent="空闲";$("url").value="local://合成数据看板";renderFlow(-1,0);document.querySelectorAll(".highlight").forEach(x=>x.classList.remove("highlight"));});
+renderFlow(-1,0);
+</script>
+</body>
+</html>

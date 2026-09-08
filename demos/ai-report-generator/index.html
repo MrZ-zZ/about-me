@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>子栖 · AI 数据分析报告生成器</title>
+<style>
+:root{--bg:#070b14;--panel:rgba(15,23,42,.85);--panel2:rgba(17,26,44,.9);--line:rgba(148,163,184,.22);--text:#e6edf7;--muted:#8ea2bf;--cyan:#22d3ee;--purple:#a855f7;--green:#34d399;--warn:#fbbf24}
+*{box-sizing:border-box}
+body{margin:0;min-height:100vh;color:var(--text);background:radial-gradient(circle at 20% 10%,rgba(168,85,247,.14),transparent 30rem),radial-gradient(circle at 80% 20%,rgba(34,211,238,.12),transparent 28rem),linear-gradient(145deg,#070b14,#0b1222 55%,#070b14);font-family:"Segoe UI","Microsoft YaHei",system-ui,sans-serif}
+.wrap{max-width:1240px;margin:0 auto;padding:36px 20px 64px}
+.badge{display:inline-flex;align-items:center;gap:8px;padding:8px 14px;border:1px solid rgba(34,211,238,.45);border-radius:999px;background:rgba(34,211,238,.08);color:#7deffd;font-size:13px}
+h1{margin:12px 0 8px;font-size:34px}
+.sub{max-width:760px;margin:0;color:var(--muted);line-height:1.85}
+.layout{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-top:24px}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:22px;padding:20px;box-shadow:0 24px 70px rgba(2,6,23,.45);backdrop-filter:blur(12px)}
+.panel-title{font-weight:700;color:#cfe9ff;margin-bottom:14px}
+textarea{width:100%;min-height:260px;background:#0a111f;border:1px solid var(--line);color:var(--text);border-radius:14px;padding:14px;resize:vertical;line-height:1.7;font-family:Consolas,"Microsoft YaHei",monospace}
+.actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:14px}
+button{border:0;border-radius:12px;padding:11px 16px;background:linear-gradient(90deg,#0891b2,#7c3aed);color:#fff;font-weight:700;cursor:pointer}
+button.ghost{background:rgba(255,255,255,.06);border:1px solid var(--line);color:var(--text)}
+.report{white-space:pre-wrap;line-height:1.85;color:#cbd5e1;max-height:640px;overflow:auto;background:#0a111f;border:1px solid var(--line);border-radius:14px;padding:16px}
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:14px}
+.kpi{background:var(--panel2);border:1px solid var(--line);border-radius:14px;padding:12px}
+.kpi b{display:block;color:#7deffd;font-size:18px}
+.kpi span{color:var(--muted);font-size:11px}
+.bar-row{display:grid;grid-template-columns:120px 1fr 70px;gap:8px;align-items:center;margin:8px 0}
+.bar{height:8px;border-radius:999px;background:#101b30;overflow:hidden}
+.bar i{display:block;height:100%;background:linear-gradient(90deg,#22d3ee,#a855f7)}
+.muted{color:var(--muted)}
+@media(max-width:860px){.layout{grid-template-columns:1fr}.kpis{grid-template-columns:repeat(2,1fr)}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <span class="badge">本地规则引擎 · 不依赖 API Key</span>
+  <h1>AI 数据分析报告生成器</h1>
+  <p class="sub">粘贴经营数据摘要或上传 CSV，自动生成数据概览、趋势判断、结构分析、异常提示和行动建议。所有计算均在浏览器本地完成。</p>
+  <div class="layout">
+    <section class="panel">
+      <div class="panel-title">输入数据</div>
+      <textarea id="input" placeholder="可粘贴文字，例如：2026年1-6月营业收入分别为 12、14、16、18、21、24 万元；线上渠道占比从 40% 提升到 62%。"></textarea>
+      <input type="file" id="file" accept=".csv,text/csv" hidden />
+      <div class="actions">
+        <button id="generate">生成分析报告</button>
+        <button class="ghost" id="sampleBtn">载入合成示例</button>
+        <button class="ghost" id="uploadBtn">上传 CSV</button>
+        <button class="ghost" id="downloadMd">下载 Markdown</button>
+        <button class="ghost" id="downloadHtml">下载 HTML</button>
+      </div>
+      <div class="kpis">
+        <div class="kpi"><b id="kMin">-</b><span>最小值</span></div>
+        <div class="kpi"><b id="kMax">-</b><span>最大值</span></div>
+        <div class="kpi"><b id="kAvg">-</b><span>平均值</span></div>
+        <div class="kpi"><b id="kRate">-</b><span>首尾变化</span></div>
+      </div>
+      <div id="bars"></div>
+    </section>
+    <section class="panel">
+      <div class="panel-title">生成结果</div>
+      <div id="report" class="report">点击“生成分析报告”查看结果。</div>
+      <div class="actions"><button class="ghost" id="copy">复制报告</button></div>
+    </section>
+  </div>
+</div>
+<script>
+const $=id=>document.getElementById(id);
+function toast(msg){alert(msg);}
+function parseNumbers(text){return (text.match(/-?\d+(?:\.\d+)?/g)||[]).map(Number).filter(Number.isFinite);}
+function avg(a){return a.length?a.reduce((s,x)=>s+x,0)/a.length:0;}
+function buildReport(text){
+  const clean=text.trim();
+  if(!clean)return "请先输入数据摘要。";
+  const nums=parseNumbers(clean), lines=clean.split(/\r?\n/).filter(x=>x.trim());
+  const title="# 数据分析报告";
+  const meta="生成时间："+new Date().toLocaleString()+"\n数据来源：本地输入\n";
+  let overview="## 一、数据概览\n- 输入内容共 "+lines.length+" 行，识别到 "+nums.length+" 个数值。";
+  let trend="## 二、趋势判断";
+  let structure="## 三、结构分析";
+  let anomaly="## 四、异常提示";
+  let action="## 五、行动建议";
+  let basis="## 六、结论依据";
+  if(nums.length>=3){
+    const first=nums[0],last=nums[nums.length-1],min=Math.min(...nums),max=Math.max(...nums),mean=avg(nums),change=last-first,rate=first?Math.round(change/first*100):0;
+    overview+="\n- 最小值 "+min+"，最大值 "+max+"，平均值 "+mean.toFixed(2);
+    trend+="\n- 首尾值从 "+first+" 变化到 "+last+"，变化幅度约 "+rate+"%。";
+    trend+=rate>5?"\n- 整体呈增长趋势，建议关注增长的稳定性和渠道结构。":rate<-5?"\n- 整体呈下降趋势，建议优先排查核心渠道和产品结构。":"\n- 整体变化不大，建议继续观察环比波动。";
+    const highIndex=nums.indexOf(max),lowIndex=nums.indexOf(min);
+    anomaly+="\n- 最高点位于第 "+(highIndex+1)+" 个数值，最低点位于第 "+(lowIndex+1)+" 个数值，可结合时间顺序复核。";
+  } else {
+    trend+="\n- 当前输入中未识别到足够连续数值，建议补充月度销售额、订单量或渠道占比。";
+    anomaly+="\n- 暂无足够数据执行异常检测。";
+  }
+  if(/渠道|占比|比例|线上|线下|产品|区域|客户/.test(clean)){
+    structure+="\n- 已识别到结构维度，建议按渠道、产品或区域拆解贡献占比。";
+  } else {
+    structure+="\n- 请补充渠道、产品、区域等维度，用于计算集中度与贡献占比。";
+  }
+  action+="\n- 先核对数据口径，再基于趋势与结构输出可执行动作。\n- 建议保留原始数据和计算过程，便于后续复现。";
+  basis+="\n- 结论来自本地规则：首尾比较、均值、极值、结构关键词识别，不发送原始数据。";
+  return [title,meta,overview,trend,structure,anomaly,action,basis].join("\n\n");
+}
+function renderStats(text){const nums=parseNumbers(text);if(nums.length){$("kMin").textContent=Math.min(...nums);$("kMax").textContent=Math.max(...nums);$("kAvg").textContent=avg(nums).toFixed(2);const rate=nums[0]?Math.round((nums[nums.length-1]-nums[0])/nums[0]*100):0;$("kRate").textContent=(rate>0?"+":"")+rate+"%";const max=Math.max(...nums);$("bars").innerHTML=nums.slice(0,12).map((n,i)=>'<div class="bar-row"><span>数值 '+(i+1)+'</span><div class="bar"><i style="width:'+Math.round(n/max*100)+'%"></i></div><b>'+n+'</b></div>').join("");}else{$("kMin").textContent="-";$("kMax").textContent="-";$("kAvg").textContent="-";$("kRate").textContent="-";$("bars").innerHTML="";}}
+function generate(){const text=$("input").value;renderStats(text);$("report").innerText=buildReport(text);}
+function readCsv(text){const rows=text.trim().split(/\r?\n/).filter(Boolean);return rows.slice(0,30).join("\n");}
+$("generate").addEventListener("click",generate);
+$("sampleBtn").addEventListener("click",()=>{$("input").value="2026年1-6月营业收入分别为 12、14、16、18、21、24 万元；\n线上渠道占比从 40% 提升到 62%；\n退货率从 4.2% 下降至 2.8%。";generate();});
+$("uploadBtn").addEventListener("click",()=>$("file").click());
+$("file").addEventListener("change",e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{$("input").value=readCsv(String(r.result));generate();};r.readAsText(f,"utf-8");});
+$("copy").addEventListener("click",async()=>{try{await navigator.clipboard.writeText($("report").innerText);toast("已复制");}catch(e){toast("复制失败，请手动选择文本");}});
+$("downloadMd").addEventListener("click",()=>{const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([$("report").innerText],{type:"text/markdown;charset=utf-8"}));a.download="data-report.md";a.click();});
+$("downloadHtml").addEventListener("click",()=>{const html="<!doctype html><meta charset='utf-8'><title>数据分析报告</title><body style='max-width:860px;margin:auto;padding:40px;font-family:Microsoft YaHei;line-height:1.8;white-space:pre-wrap'>"+$("report").innerText+"</body>";const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([html],{type:"text/html;charset=utf-8"}));a.download="data-report.html";a.click();});
+</script>
+</body>
+</html>

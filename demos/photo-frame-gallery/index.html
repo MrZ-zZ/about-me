@@ -1,0 +1,388 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>子栖 · 本地相框相册</title>
+<style>
+:root {
+  --bg: #0b1120;
+  --panel: #111a2e;
+  --panel2: #0f172a;
+  --text: #f8fafc;
+  --muted: #a9b7cc;
+  --accent: #67e8f9;
+  --border: rgba(148, 163, 184, 0.22);
+  --danger: #fb7185;
+  --success: #6ee7b7;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  min-height: 100vh;
+  background:
+    radial-gradient(circle at 15% 10%, rgba(34, 211, 238, 0.12), transparent 28rem),
+    radial-gradient(circle at 85% 15%, rgba(168, 85, 247, 0.12), transparent 26rem),
+    var(--bg);
+  color: var(--text);
+  font-family: "Segoe UI", "Microsoft YaHei", system-ui, sans-serif;
+}
+.wrap { max-width: 1180px; margin: 0 auto; padding: 32px 20px 60px; }
+header h1 { margin: 0 0 8px; font-size: 30px; }
+header p { margin: 0; color: var(--muted); line-height: 1.7; }
+.controls {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: 14px;
+  margin: 26px 0;
+  padding: 18px;
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  background: var(--panel);
+}
+.controls label { display: flex; flex-direction: column; gap: 7px; font-size: 13px; color: var(--muted); }
+.controls input, .controls select {
+  background: var(--panel2);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 10px 12px;
+  color: var(--text);
+  font: inherit;
+}
+.drop {
+  margin: 20px 0;
+  padding: 28px;
+  border: 2px dashed var(--border);
+  border-radius: 20px;
+  text-align: center;
+  color: var(--muted);
+  cursor: pointer;
+  transition: border-color .2s, background .2s;
+}
+.drop.dragging { border-color: var(--accent); background: rgba(103, 232, 249, 0.08); }
+.message { min-height: 20px; margin: 4px 0 14px; font-size: 13px; color: var(--muted); }
+.message.error { color: var(--danger); }
+.message.success { color: var(--success); }
+.gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 16px; }
+.frame {
+  position: relative;
+  border-radius: 16px;
+  overflow: hidden;
+  background: var(--panel2);
+  border: 1px solid var(--border);
+  cursor: zoom-in;
+}
+.frame img { width: 100%; height: 210px; object-fit: cover; display: block; }
+.frame .meta { padding: 10px 12px; display: flex; justify-content: space-between; gap: 10px; align-items: center; }
+.frame .name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--muted); font-size: 13px; }
+.frame .remove { border: 0; background: transparent; color: var(--danger); cursor: pointer; }
+.watermark {
+  position: absolute;
+  right: 10px;
+  bottom: 42px;
+  padding: 4px 9px;
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.45);
+  color: #fff;
+  font-size: 12px;
+  pointer-events: none;
+}
+.frame.classic img { padding: 10px; background: #f8fafc; }
+.frame.polaroid img { padding: 10px 10px 30px; background: #f8fafc; }
+.frame.rounded img { border-radius: 22px; padding: 5px; }
+.frame.none img { padding: 0; }
+.actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 20px; }
+button {
+  border: 0;
+  border-radius: 12px;
+  padding: 11px 16px;
+  color: #0b1120;
+  background: var(--accent);
+  font-weight: 600;
+  cursor: pointer;
+}
+button.ghost { background: transparent; color: var(--text); border: 1px solid var(--border); }
+.hint { color: var(--muted); font-size: 13px; margin-top: 14px; line-height: 1.7; }
+.empty { padding: 40px; text-align: center; color: var(--muted); border: 1px dashed var(--border); border-radius: 20px; }
+.lightbox {
+  position: fixed; inset: 0; z-index: 50; display: grid; place-items: center;
+  background: rgba(2, 6, 23, 0.88); padding: 40px;
+}
+.lightbox[hidden] { display: none; }
+.lightbox img { max-width: min(92vw, 1100px); max-height: 82vh; border-radius: 16px; background: #0f172a; }
+.lightbox .lb-close, .lightbox .lb-prev, .lightbox .lb-next {
+  position: absolute; border: 1px solid var(--border); background: rgba(15, 23, 42, 0.9); color: var(--text);
+  border-radius: 50%; width: 42px; height: 42px; display: grid; place-items: center; font-size: 24px;
+}
+.lightbox .lb-close { top: 24px; right: 24px; }
+.lightbox .lb-prev { left: 24px; top: 50%; transform: translateY(-50%); }
+.lightbox .lb-next { right: 24px; top: 50%; transform: translateY(-50%); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>本地相框相册</h1>
+    <p>浏览器本地读取照片，不联网、不上传。支持文件、文件夹、粘贴图片链接和拖入网页图片。</p>
+  </header>
+
+  <div class="controls">
+    <label>相框样式
+      <select id="frameStyle">
+        <option value="none">无边</option>
+        <option value="classic">经典白框</option>
+        <option value="polaroid">拍立得</option>
+        <option value="rounded">圆角画框</option>
+      </select>
+    </label>
+    <label>图片滤镜
+      <select id="filter">
+        <option value="none">原图</option>
+        <option value="grayscale">黑白</option>
+        <option value="sepia">暖黄</option>
+        <option value="contrast">高对比</option>
+        <option value="brightness">提亮</option>
+      </select>
+    </label>
+    <label>水印文字
+      <input id="watermark" value="子栖" />
+    </label>
+    <label>本地照片
+      <input id="fileInput" type="file" accept="image/*" multiple />
+    </label>
+    <label>导入整个文件夹
+      <input id="folderInput" type="file" webkitdirectory directory multiple accept="image/*" />
+    </label>
+    <label>粘贴图片链接
+      <input id="urlInput" type="text" placeholder="https://... 或 data:image/..." />
+    </label>
+  </div>
+
+  <div class="drop" id="dropZone">也可以把照片或网页图片拖到这里</div>
+  <div class="message" id="message"></div>
+  <div class="actions">
+    <button id="exportHtml">导出 HTML 拼贴</button>
+    <button id="printBtn" class="ghost">打印预览</button>
+    <button id="clearBtn" class="ghost">清空</button>
+  </div>
+  <div class="gallery" id="gallery"></div>
+  <div class="empty" id="empty">还没有照片。选择或拖入本地图片后，这里会生成原创相册。</div>
+  <p class="hint">提示：直接粘贴网页图片的 blob: 链接时，跨标签页可能不可读取；如果失败，请改用“本地照片”选择文件，或把图片文件拖进上方区域。</p>
+</div>
+
+<div class="lightbox" id="lightbox" hidden>
+  <button class="lb-close" id="lightboxClose">×</button>
+  <button class="lb-prev" id="lightboxPrev">‹</button>
+  <img id="lightboxImg" alt="预览图" />
+  <button class="lb-next" id="lightboxNext">›</button>
+</div>
+
+<script>
+const gallery = document.getElementById("gallery");
+const empty = document.getElementById("empty");
+const fileInput = document.getElementById("fileInput");
+const folderInput = document.getElementById("folderInput");
+const urlInput = document.getElementById("urlInput");
+const dropZone = document.getElementById("dropZone");
+const frameStyle = document.getElementById("frameStyle");
+const filter = document.getElementById("filter");
+const watermark = document.getElementById("watermark");
+const message = document.getElementById("message");
+const lightbox = document.getElementById("lightbox");
+const lightboxImg = document.getElementById("lightboxImg");
+let images = [];
+let lightboxIndex = 0;
+
+function showMessage(text, type) {
+  message.textContent = text || "";
+  message.className = "message" + (type ? " " + type : "");
+}
+
+function applyFilter(img) {
+  const value = filter.value;
+  const map = { none: "", grayscale: "grayscale(1)", sepia: "sepia(.85)", contrast: "contrast(1.35)", brightness: "brightness(1.18)" };
+  img.style.filter = map[value] || "";
+}
+
+function render() {
+  gallery.innerHTML = "";
+  images.forEach((item, index) => {
+    const card = document.createElement("div");
+    card.className = "frame " + frameStyle.value;
+    const img = document.createElement("img");
+    img.src = item.dataUrl;
+    img.alt = item.name;
+    applyFilter(img);
+    const wm = document.createElement("div");
+    wm.className = "watermark";
+    wm.textContent = watermark.value || "子栖";
+    const meta = document.createElement("div");
+    meta.className = "meta";
+    const name = document.createElement("span");
+    name.className = "name";
+    name.textContent = item.name;
+    const remove = document.createElement("button");
+    remove.className = "remove";
+    remove.textContent = "移除";
+    remove.addEventListener("click", (event) => {
+      event.stopPropagation();
+      images = images.filter((x) => x.id !== item.id);
+      render();
+    });
+    meta.append(name, remove);
+    card.append(img, wm, meta);
+    card.addEventListener("click", () => openLightbox(index));
+    gallery.appendChild(card);
+  });
+  empty.style.display = images.length ? "none" : "block";
+}
+
+function readFile(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = () => reject(reader.error || new Error("读取文件失败"));
+    reader.readAsDataURL(file);
+  });
+}
+
+function imageNameFromUrl(url) {
+  try {
+    const path = decodeURIComponent(url.split("?")[0].split("#")[0]);
+    const name = path.split("/").pop();
+    return name && name.includes(".") ? name : "网络图片";
+  } catch {
+    return "网络图片";
+  }
+}
+
+async function addFiles(fileList) {
+  const files = Array.from(fileList || []).filter((f) => f.type.startsWith("image/") || /\.(jpg|jpeg|png|gif|webp|bmp|svg)$/i.test(f.name));
+  if (!files.length) {
+    showMessage("没有识别到图片文件。", "error");
+    return;
+  }
+  let added = 0;
+  for (const file of files) {
+    const dataUrl = await readFile(file);
+    images.push({ id: crypto.randomUUID(), name: file.webkitRelativePath || file.name, dataUrl });
+    added += 1;
+  }
+  render();
+  showMessage("已导入 " + added + " 张照片。", "success");
+}
+
+async function addUrl(rawUrl) {
+  const url = (rawUrl || "").trim();
+  if (!url) return;
+  showMessage("正在读取图片链接…", "");
+  try {
+    let dataUrl;
+    if (url.startsWith("data:image/")) {
+      dataUrl = url;
+    } else {
+      const response = await fetch(url, { mode: "cors" });
+      if (!response.ok) throw new Error("HTTP " + response.status);
+      const blob = await response.blob();
+      if (!blob.type.startsWith("image/")) throw new Error("链接返回的不是图片");
+      dataUrl = await readFile(blob);
+    }
+    images.push({ id: crypto.randomUUID(), name: imageNameFromUrl(url), dataUrl });
+    render();
+    showMessage("已导入 1 张图片。", "success");
+  } catch (error) {
+    const isBlob = url.startsWith("blob:");
+    showMessage(
+      isBlob
+        ? "这个 blob: 链接是网页临时地址，跨标签页或页面刷新后通常无法读取。请把图片文件保存到本地后，用“本地照片”选择，或直接拖入本页面。"
+        : "图片链接读取失败：" + error.message + "。可尝试把图片保存到本地后再导入。",
+      "error"
+    );
+  }
+}
+
+fileInput.addEventListener("change", (e) => addFiles(e.target.files));
+folderInput.addEventListener("change", (e) => addFiles(e.target.files));
+urlInput.addEventListener("keydown", (e) => {
+  if (e.key === "Enter") { addUrl(urlInput.value); urlInput.value = ""; }
+});
+
+["dragover", "dragleave", "drop"].forEach((type) => {
+  dropZone.addEventListener(type, (e) => {
+    e.preventDefault();
+    dropZone.classList.toggle("dragging", type === "dragover");
+    if (type !== "drop") return;
+    const files = Array.from(e.dataTransfer.files || []);
+    if (files.length) {
+      addFiles(files);
+      return;
+    }
+    const uriList = e.dataTransfer.getData("text/uri-list") || e.dataTransfer.getData("text/plain");
+    if (uriList) {
+      uriList.split(/\r?\n/).map((line) => line.trim()).filter(Boolean).forEach((url) => addUrl(url));
+    } else {
+      showMessage("拖入内容里没有可读取的图片文件或图片链接。", "error");
+    }
+  });
+});
+
+document.addEventListener("paste", (e) => {
+  const files = Array.from(e.clipboardData?.files || []);
+  if (files.some((f) => f.type.startsWith("image/"))) {
+    e.preventDefault();
+    addFiles(files);
+  }
+});
+[frameStyle, filter, watermark].forEach((el) => el.addEventListener("input", render));
+
+function openLightbox(index) {
+  lightboxIndex = index;
+  updateLightbox();
+  lightbox.hidden = false;
+}
+function updateLightbox() {
+  const item = images[lightboxIndex];
+  if (!item) return;
+  lightboxImg.src = item.dataUrl;
+  lightboxImg.alt = item.name;
+  applyFilter(lightboxImg);
+}
+function stepLightbox(delta) {
+  if (!images.length) return;
+  lightboxIndex = (lightboxIndex + delta + images.length) % images.length;
+  updateLightbox();
+}
+function closeLightbox() {
+  lightbox.hidden = true;
+  lightboxImg.removeAttribute("src");
+}
+document.getElementById("lightboxClose").addEventListener("click", closeLightbox);
+document.getElementById("lightboxPrev").addEventListener("click", () => stepLightbox(-1));
+document.getElementById("lightboxNext").addEventListener("click", () => stepLightbox(1));
+lightbox.addEventListener("click", (e) => { if (e.target === lightbox) closeLightbox(); });
+document.addEventListener("keydown", (e) => {
+  if (lightbox.hidden) return;
+  if (e.key === "Escape") closeLightbox();
+  if (e.key === "ArrowLeft") stepLightbox(-1);
+  if (e.key === "ArrowRight") stepLightbox(1);
+});
+
+function exportHtml() {
+  const cards = images.map((item) => {
+    return '<figure class="item"><img src="' + item.dataUrl + '" alt="' + item.name.replace(/"/g, "&quot;") + '" /><figcaption>' + item.name + '</figcaption></figure>';
+  }).join("\n");
+  const doc = '<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><title>子栖相册拼贴</title><style>body{font-family:Segoe UI,Microsoft YaHei,sans-serif;background:#0b1120;color:#f8fafc;padding:30px}h1{font-size:24px}.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:18px}.item{background:#111a2e;border:1px solid rgba(148,163,184,.22);border-radius:18px;overflow:hidden}.item img{width:100%;height:230px;object-fit:cover;display:block}.item figcaption{padding:10px 12px;color:#a9b7cc;font-size:13px}</style></head><body><h1>子栖 · 相册拼贴</h1><div class="grid">' + cards + '</div></body></html>';
+  const blob = new Blob([doc], { type: "text/html;charset=utf-8" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = "ziqi-photo-collage.html";
+  a.click();
+}
+
+document.getElementById("exportHtml").addEventListener("click", exportHtml);
+document.getElementById("printBtn").addEventListener("click", () => window.print());
+document.getElementById("clearBtn").addEventListener("click", () => { images = []; render(); showMessage(""); });
+render();
+</script>
+</body>
+</html>

@@ -1,0 +1,164 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>子栖 · 小说章节批处理与阅读器</title>
+<style>
+:root{--bg:#080b1a;--panel:rgba(22,28,66,.88);--panel2:rgba(10,13,33,.84);--line:rgba(160,172,255,.22);--text:#f5f7ff;--muted:#aeb7e8;--gold:#ffd36e;--cyan:#6ee7ff;--purple:#b28cff;--reader-bg:rgba(255,255,255,.92);--reader-text:#1e2442}
+body.night{--reader-bg:rgba(8,11,28,.96);--reader-text:#e8ecff;--panel:rgba(8,11,28,.92);--panel2:rgba(16,19,42,.9)}
+*{box-sizing:border-box}
+html,body{margin:0;min-height:100%}
+body{font-family:"Microsoft YaHei","PingFang SC",system-ui,sans-serif;color:var(--text);background:radial-gradient(circle at 12% 8%,rgba(111,78,255,.32),transparent 30%),radial-gradient(circle at 90% 18%,rgba(0,210,255,.18),transparent 28%),linear-gradient(135deg,#070817 0%,#11163a 45%,#231148 100%);min-height:100vh}
+.app{width:min(1180px,calc(100% - 28px));margin:0 auto;padding:26px 0 42px}
+.hero{position:relative;overflow:hidden;border:1px solid var(--line);border-radius:28px;padding:30px;background:linear-gradient(120deg,rgba(22,28,73,.92),rgba(49,27,93,.78));box-shadow:0 24px 80px rgba(0,0,0,.35)}
+.hero::before{content:"";position:absolute;inset:-80px;background:linear-gradient(90deg,transparent,rgba(255,255,255,.12),transparent);transform:rotate(12deg);animation:shine 8s linear infinite}
+@keyframes shine{from{transform:translateX(-60%) rotate(12deg)}to{transform:translateX(60%) rotate(12deg)}}
+.hero-content{position:relative;z-index:1}
+.eyebrow{display:inline-flex;align-items:center;gap:8px;padding:8px 14px;border:1px solid rgba(255,211,110,.38);border-radius:999px;color:var(--gold);background:rgba(255,211,110,.08);font-size:13px}
+h1{margin:16px 0 10px;font-size:clamp(28px,4.5vw,54px);line-height:1.08}
+.subtitle{margin:0;max-width:880px;color:var(--muted);font-size:16px;line-height:1.8}
+.info-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:22px}
+.info{min-height:96px;border:1px solid var(--line);border-radius:18px;padding:14px;background:rgba(10,13,36,.48)}
+.info small{color:var(--muted);font-size:12px;display:block;margin-bottom:8px}
+.info b{font-size:30px;color:var(--gold)}
+.flow{margin-top:16px;border:1px solid var(--line);border-radius:22px;background:rgba(5,8,28,.54);padding:18px}
+.flow h2{margin:0 0 14px;font-size:20px}
+.steps{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;overflow-x:auto;padding-bottom:6px}
+.step{position:relative;min-height:80px;border:1px solid rgba(110,231,255,.26);border-radius:16px;padding:12px;background:radial-gradient(circle at top,rgba(110,231,255,.16),transparent 52%),rgba(17,23,62,.86)}
+.step b{color:var(--cyan);display:block;margin-bottom:6px}
+.step span{color:var(--muted);font-size:12px;line-height:1.5}
+.layout{display:grid;grid-template-columns:320px 1fr;gap:14px;margin-top:18px}
+.sidebar,.reader{border:1px solid var(--line);border-radius:22px;background:var(--panel);box-shadow:0 20px 60px rgba(0,0,0,.3)}
+.sidebar{padding:16px}
+.side-head,.reader-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+.side-head h2,.reader-head h2{margin:0;font-size:18px}
+.chapter-list{display:grid;gap:9px;max-height:540px;overflow:auto;padding-right:4px}
+.chapter-card{width:100%;text-align:left;border:1px solid rgba(160,172,255,.2);border-radius:14px;padding:12px;background:var(--panel2);color:var(--text);cursor:pointer;font:inherit}
+.chapter-card:hover,.chapter-card.active{border-color:var(--cyan);background:rgba(110,231,255,.09)}
+.chapter-card b{display:block;font-size:14px;margin-bottom:5px}
+.chapter-card span{color:var(--muted);font-size:12px}
+.reader{padding:18px}
+.reader-body{min-height:520px;border-radius:18px;background:var(--reader-bg);color:var(--reader-text);padding:clamp(22px,5vw,52px);line-height:2;font-size:16px;white-space:pre-wrap}
+.reader-nav{display:flex;justify-content:space-between;gap:10px;margin-top:14px}
+.reader-nav button,.tool button{border:1px solid var(--line);border-radius:12px;padding:9px 14px;background:var(--panel2);color:var(--text);cursor:pointer;font:inherit}
+.reader-nav button:hover,.tool button:hover{border-color:var(--cyan)}
+.tools{display:flex;gap:8px}
+.textarea-panel{margin-top:18px;border:1px solid var(--line);border-radius:22px;background:var(--panel);padding:18px;box-shadow:0 20px 60px rgba(0,0,0,.3)}
+.textarea-panel h2{margin:0 0 10px;font-size:18px}
+textarea{width:100%;min-height:180px;resize:vertical;border:1px solid var(--line);border-radius:14px;background:var(--panel2);color:var(--text);padding:14px;font:14px/1.7 Consolas,monospace}
+.actions{display:flex;gap:10px;margin-top:10px;flex-wrap:wrap}
+.actions button{border:0;border-radius:12px;padding:10px 15px;background:linear-gradient(135deg,var(--cyan),var(--purple));color:#08111d;font-weight:700;cursor:pointer;font:inherit}
+.actions button.ghost{background:transparent;border:1px solid var(--line);color:var(--text)}
+@media(max-width:860px){.info-grid{grid-template-columns:repeat(2,1fr)}.layout{grid-template-columns:1fr}.chapter-list{max-height:300px}}
+</style>
+</head>
+<body>
+<div class="app">
+  <section class="hero">
+    <div class="hero-content">
+      <span class="eyebrow">✦ 本地章节解析 · 原创合成文本</span>
+      <h1>小说章节批处理与阅读器</h1>
+      <p class="subtitle">粘贴章节文本，自动识别标题、清洗空行、统计字数，并以书架和阅读器展示。示例内容完全虚构。</p>
+      <div class="info-grid" id="infoGrid"></div>
+    </div>
+  </section>
+
+  <section class="flow">
+    <h2>处理流程</h2>
+    <div class="steps">
+      <div class="step"><b>01 载入</b><span>读取本地文本或载入示例</span></div>
+      <div class="step"><b>02 清洗</b><span>去除空行与多余空白</span></div>
+      <div class="step"><b>03 识别</b><span>匹配“第 N 章”标题</span></div>
+      <div class="step"><b>04 分章</b><span>生成章节目录与预览</span></div>
+      <div class="step"><b>05 阅读</b><span>进入章节阅读器</span></div>
+    </div>
+  </section>
+
+  <div class="layout">
+    <aside class="sidebar">
+      <div class="side-head"><h2>章节书架</h2><span style="color:var(--muted);font-size:12px" id="sideCount">0 章</span></div>
+      <div class="chapter-list" id="chapterList"></div>
+    </aside>
+
+    <section class="reader">
+      <div class="reader-head">
+        <h2 id="readerTitle">选择章节</h2>
+        <div class="tools"><button id="prevBtn">上一章</button><button id="nextBtn">下一章</button><button id="modeBtn">切换阅读背景</button></div>
+      </div>
+      <div class="reader-body" id="readerBody">点击左侧章节开始阅读。</div>
+      <div class="reader-nav"><span style="color:var(--muted);font-size:12px" id="readerPos">0 / 0</span><span style="color:var(--muted);font-size:12px" id="readerChars">0 字</span></div>
+    </section>
+  </div>
+
+  <section class="textarea-panel">
+    <h2>自定义章节文本</h2>
+    <textarea id="source"></textarea>
+    <div class="actions"><button id="parseBtn">重新解析</button><button id="sampleBtn" class="ghost">载入合成示例</button><button id="clearBtn" class="ghost">清空</button></div>
+  </section>
+</div>
+
+<script>
+const sample=`第一章 出发
+
+清晨的风从窗口吹进来，他合上笔记本，决定开始这段旅程。
+
+第二章 遇见
+
+街道转角处，一位陌生人递来一张地图，上面的路径尚未完全展开。
+
+第三章 回望
+
+故事走到这里，他才明白，每一步都不是偶然。
+
+第四章 选择
+
+两条路在眼前分开，一条明亮，一条安静。
+
+第五章 抵达
+
+当他再次抬头，熟悉的灯火已经在远处亮起。`;
+let chapters=[];let currentIndex=0;
+function parse(){
+  const text=document.getElementById("source").value.replace(/\r/g,"");
+  const lines=text.split("\n").map(x=>x.trim()).filter(Boolean);
+  chapters=[];let cur=null;
+  for(const line of lines){
+    const m=line.match(/^第[一二三四五六七八九十百千\d]+章\s*(.*)$/);
+    if(m){cur={title:line,content:""};chapters.push(cur);}
+    else if(cur){cur.content+=(cur.content?"\n":"")+line;}
+  }
+  if(!chapters.length){chapters=[{title:"未识别章节",content:"未找到章节标题，请在文本中使用“第一章”这类格式。"}];}
+  renderInfo();renderList();
+  currentIndex=Math.min(currentIndex,chapters.length-1);openChapter(currentIndex);
+}
+function renderInfo(){
+  const total=chapters.reduce((s,c)=>s+c.content.length,0);
+  document.getElementById("infoGrid").innerHTML=[
+    ["章节数",chapters.length],["总字数",total],["空行清洗","已完成"],["处理模式","本地"]
+  ].map(([k,v])=>'<div class="info"><small>'+k+'</small><b>'+v+'</b></div>').join("");
+}
+function renderList(){
+  document.getElementById("sideCount").textContent=chapters.length+" 章";
+  document.getElementById("chapterList").innerHTML=chapters.map((c,i)=>'<button class="chapter-card'+(i===currentIndex?" active":"")+'" data-index="'+i+'"><b>'+c.title+'</b><span>'+c.content.length+' 字</span></button>').join("");
+  document.querySelectorAll(".chapter-card").forEach(btn=>btn.addEventListener("click",()=>openChapter(Number(btn.dataset.index))));
+}
+function openChapter(i){
+  if(i<0)i=0;if(i>=chapters.length)i=chapters.length-1;
+  currentIndex=i;
+  document.getElementById("readerTitle").textContent=chapters[i].title;
+  document.getElementById("readerBody").textContent=chapters[i].content;
+  document.getElementById("readerPos").textContent=(i+1)+" / "+chapters.length;
+  document.getElementById("readerChars").textContent=chapters[i].content.length+" 字";
+  document.querySelectorAll(".chapter-card").forEach(btn=>btn.classList.toggle("active",Number(btn.dataset.index)===i));
+}
+document.getElementById("source").value=sample;parse();
+document.getElementById("parseBtn").addEventListener("click",parse);
+document.getElementById("sampleBtn").addEventListener("click",()=>{document.getElementById("source").value=sample;parse();});
+document.getElementById("clearBtn").addEventListener("click",()=>{document.getElementById("source").value="";parse();});
+document.getElementById("prevBtn").addEventListener("click",()=>openChapter(currentIndex-1));
+document.getElementById("nextBtn").addEventListener("click",()=>openChapter(currentIndex+1));
+document.getElementById("modeBtn").addEventListener("click",()=>document.body.classList.toggle("night"));
+</script>
+</body>
+</html>

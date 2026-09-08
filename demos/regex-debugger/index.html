@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>子栖 · 正则调试助手</title>
+<style>
+:root{--bg:#070b14;--panel:#101829;--panel2:#0b1220;--line:#24314d;--text:#e6edf7;--muted:#8ea2bf;--cyan:#22d3ee;--purple:#a855f7;--green:#34d399;--red:#fb7185;--yellow:#fbbf24}
+*{box-sizing:border-box}
+body{margin:0;min-height:100vh;background:radial-gradient(circle at 15% 10%,rgba(34,211,238,.12),transparent 28rem),radial-gradient(circle at 85% 15%,rgba(168,85,247,.12),transparent 26rem),var(--bg);color:var(--text);font-family:"Segoe UI","Microsoft YaHei",system-ui,sans-serif}
+.wrap{width:min(1000px,calc(100% - 32px));margin:0 auto;padding:32px 0 60px}
+.top{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;flex-wrap:wrap}
+h1{margin:0 0 8px;font-size:30px}
+.sub{margin:0;color:var(--muted);line-height:1.7}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:20px;padding:18px;margin-top:20px;box-shadow:0 20px 60px rgba(0,0,0,.3)}
+.field{margin-top:14px}
+.field:first-child{margin-top:0}
+.field label{display:flex;justify-content:space-between;gap:10px;color:var(--muted);font-size:12px;margin-bottom:8px}
+textarea{width:100%;box-sizing:border-box;min-height:110px;resize:vertical;border:1px solid var(--line);border-radius:14px;background:var(--panel2);color:var(--text);padding:12px;font:14px/1.7 Consolas,monospace;outline:none}
+textarea:focus{border-color:var(--cyan)}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.toolbar{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+button{border:1px solid var(--line);border-radius:12px;padding:10px 14px;background:var(--panel2);color:var(--text);cursor:pointer;font:inherit}
+button:hover{border-color:var(--cyan)}
+select{border:1px solid var(--line);border-radius:12px;background:var(--panel2);color:var(--text);padding:10px 12px;font:inherit}
+.sample{color:var(--cyan);font-size:12px;cursor:pointer}
+.output{margin-top:20px;min-height:140px;white-space:pre-wrap;line-height:1.9;background:#0a101d;border:1px solid var(--line);border-radius:14px;padding:14px;color:var(--text)}
+mark{background:rgba(168,85,247,.45);color:#fff;border-radius:3px;padding:0 2px}
+.matches{display:grid;gap:8px;margin-top:14px}
+.match{border:1px solid var(--line);border-radius:12px;background:var(--panel2);padding:10px 12px;font-size:13px}
+.match b{color:var(--cyan)}
+.groups{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.groups span{background:rgba(34,211,238,.1);color:var(--cyan);border-radius:8px;padding:4px 8px;font-size:12px}
+.error{border-left:3px solid var(--red);background:rgba(251,113,133,.08);color:var(--red)}
+.empty{color:var(--muted)}
+@media(max-width:720px){.row{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div><h1>正则调试助手</h1><p class="sub">实时匹配、高亮、分组查看、错误提示；数据只在本机浏览器处理。</p></div>
+    <span style="color:var(--muted);font-size:12px">LOCAL REGEX LAB</span>
+  </header>
+
+  <section class="panel">
+    <div class="row">
+      <div class="field"><label><span>正则表达式</span><span class="sample" id="samplePattern">常用示例</span></label><textarea id="re" placeholder="例如：\d{3}-\d{4}">\d+</textarea></div>
+      <div class="field"><label><span>测试文本</span><span class="sample" id="sampleText">示例文本</span></label><textarea id="text" placeholder="输入要测试的文本">子栖 2026 年完成 5 个项目</textarea></div>
+    </div>
+    <div class="toolbar">
+      <select id="flags"><option value="g">g：全局匹配</option><option value="gi">gi：全局忽略大小写</option><option value="gm">gm：全局多行</option><option value="gim">gim：全局+忽略大小写+多行</option></select>
+      <button id="copyBtn">复制结果</button>
+      <button id="clearBtn">清空</button>
+    </div>
+  </section>
+
+  <section class="output" id="output"></section>
+  <section class="matches" id="matches"></section>
+</div>
+
+<script>
+const patterns=[
+  ["手机号","1[3-9]\\d{9}"],
+  ["邮箱","[\\w.+-]+@[\\w-]+\\.[\\w.-]+"],
+  ["日期","\\d{4}[-/]\\d{1,2}[-/]\\d{1,2}"],
+  ["金额","\\d+(\\.\\d{1,2})?"],
+  ["URL","https?://[\\w./-]+"],
+  ["Python 变量","\\b[a-zA-Z_]\\w*\\b"]
+];
+const texts=[
+  "手机号：13800138000，备用 19912345678",
+  "邮箱：ziqi@example.com，另一个 test.user+tag@mail.example.cn",
+  "日期：2026-09-01 和 2026/9/1",
+  "总价 1299.00 元，优惠 50 元",
+  "网站：https://localhost:3000/projects",
+  "变量：score total_count max_value"
+];
+function run(){
+  const reText=document.getElementById("re").value;
+  const text=document.getElementById("text").value;
+  const flags=document.getElementById("flags").value;
+  const output=document.getElementById("output"),matches=document.getElementById("matches");
+  if(!reText){output.className="output empty";output.textContent="请输入正则表达式";matches.innerHTML="";return;}
+  try{
+    const re=new RegExp(reText,flags);
+    const found=[...text.matchAll(re)];
+    if(!found.length){output.className="output empty";output.textContent="没有匹配结果";matches.innerHTML="";return;}
+    output.className="output";
+    output.innerHTML=escapeHtml(text).replace(re, '<mark>$&</mark>');
+    matches.innerHTML=found.map((m,i)=>{
+      const groups=m.slice(1).map((g,j)=>'<span>组 '+(j+1)+'：'+(g??"未匹配")+'</span>').join("");
+      return '<div class="match"><b>#'+(i+1)+'</b> 「'+escapeHtml(m[0])+'」 位置 '+m.index+'–'+(m.index+m[0].length)+(groups?'<div class="groups">'+groups+'</div>':'')+'</div>';
+    }).join("");
+  }catch(e){
+    output.className="output error";output.textContent="正则错误："+e.message;matches.innerHTML="";
+  }
+}
+function escapeHtml(s){return s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");}
+function showSample(){
+  const idx=Math.floor(Math.random()*patterns.length);
+  document.getElementById("re").value=patterns[idx][1];
+  document.getElementById("text").value=texts[idx];
+  document.getElementById("flags").value="g";
+  run();
+}
+document.getElementById("re").addEventListener("input",run);
+document.getElementById("text").addEventListener("input",run);
+document.getElementById("flags").addEventListener("change",run);
+document.getElementById("samplePattern").addEventListener("click",showSample);
+document.getElementById("sampleText").addEventListener("click",showSample);
+document.getElementById("clearBtn").addEventListener("click",()=>{document.getElementById("re").value="";document.getElementById("text").value="";run();});
+document.getElementById("copyBtn").addEventListener("click",()=>{
+  const txt=document.getElementById("output").innerText+"\n\n"+document.getElementById("matches").innerText;
+  navigator.clipboard?.writeText(txt).then(()=>{const b=document.getElementById("copyBtn");b.textContent="已复制";setTimeout(()=>b.textContent="复制结果",1200);});
+});
+run();
+</script>
+</body>
+</html>

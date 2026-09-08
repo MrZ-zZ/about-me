@@ -1,0 +1,57 @@
+{
+  "postgraduate-analysis": {
+    "title": "考研择校数据分析",
+    "artifacts": [
+      {
+        "path": "考研数据分析报告.html",
+        "label": "择校分析报告（原产物）",
+        "size": 15803
+      }
+    ]
+  },
+  "postgraduate-visualization": {
+    "title": "考研数据可视化大屏",
+    "artifacts": [
+      {
+        "path": "专业招生数量与平均分分析.html",
+        "label": "招生数量与平均分",
+        "size": 8507
+      },
+      {
+        "path": "专业招生数量占比.html",
+        "label": "专业招生占比",
+        "size": 5409
+      },
+      {
+        "path": "招生人数Top10.html",
+        "label": "招生人数 Top10",
+        "size": 6622
+      },
+      {
+        "path": "综合考研数据可视化分析图表.html",
+        "label": "综合可视化图表",
+        "size": 26616
+      },
+      {
+        "path": "金融专业最低分.html",
+        "label": "金融专业最低分",
+        "size": 6613
+      }
+    ]
+  },
+  "job-market-dashboard": {
+    "title": "兼职岗位大数据可视化大屏",
+    "artifacts": [
+      {
+        "path": "复合型岗位可视化大屏.html",
+        "label": "复合型岗位大屏",
+        "size": 16424
+      },
+      {
+        "path": "完整版大屏.html",
+        "label": "完整版大屏",
+        "size": 39940
+      }
+    ]
+  }
+}

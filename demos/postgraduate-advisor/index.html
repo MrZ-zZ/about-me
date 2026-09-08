@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>子栖 · 考研数据与 AI 择校助手</title>
+<style>
+:root{--bg:#050816;--panel:rgba(10,19,42,.82);--panel2:rgba(16,30,61,.78);--line:rgba(73,225,255,.2);--cyan:#49e1ff;--blue:#588cff;--purple:#9b6cff;--green:#4df2a3;--yellow:#ffd166;--red:#ff6688;--text:#e9f7ff;--muted:#91a8c2}
+*{box-sizing:border-box}
+html,body{margin:0;min-height:100%}
+body{font-family:"Microsoft YaHei","PingFang SC",system-ui,sans-serif;color:var(--text);background:radial-gradient(circle at 12% 18%,rgba(56,143,255,.18),transparent 28%),radial-gradient(circle at 86% 8%,rgba(155,108,255,.17),transparent 25%),linear-gradient(135deg,#050816,#07132b 55%,#060a1b);overflow-x:hidden}
+body::before{content:"";position:fixed;inset:0;pointer-events:none;opacity:.18;background-image:linear-gradient(rgba(73,225,255,.08) 1px,transparent 1px),linear-gradient(90deg,rgba(73,225,255,.08) 1px,transparent 1px);background-size:42px 42px;mask-image:linear-gradient(to bottom,black,transparent 90%)}
+body::after{content:"";position:fixed;inset:0;pointer-events:none;background:repeating-linear-gradient(0deg,rgba(255,255,255,.018) 0,rgba(255,255,255,.018) 1px,transparent 1px,transparent 4px)}
+.wrap{position:relative;z-index:2;width:min(1240px,calc(100% - 28px));margin:0 auto;padding:26px 0 48px}
+.topbar{display:flex;justify-content:space-between;align-items:center;gap:16px;margin-bottom:18px}
+.brand{display:flex;align-items:center;gap:12px}
+.mark{width:44px;height:44px;display:grid;place-items:center;color:var(--cyan);border:1px solid var(--cyan);background:rgba(73,225,255,.08);box-shadow:0 0 22px rgba(73,225,255,.3),inset 0 0 18px rgba(73,225,255,.12);clip-path:polygon(18% 0,82% 0,100% 18%,100% 82%,82% 100%,18% 100%,0 82%,0 18%);font-weight:900}
+.brand b{display:block;font-size:16px;letter-spacing:1px}
+.brand small{display:block;margin-top:3px;color:var(--muted);font-size:11px;letter-spacing:2px}
+.status{display:flex;align-items:center;gap:8px;color:var(--green);font-size:12px}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--green);box-shadow:0 0 13px var(--green);animation:pulse 1.5s infinite}
+@keyframes pulse{50%{opacity:.35;transform:scale(.7)}}
+.hero{position:relative;overflow:hidden;border:1px solid var(--line);border-radius:28px;padding:clamp(20px,4vw,38px);background:linear-gradient(145deg,rgba(12,26,57,.9),rgba(5,11,29,.84));box-shadow:0 0 70px rgba(0,0,0,.4)}
+.hero h1{margin:0 0 10px;font-size:clamp(28px,5vw,50px);background:linear-gradient(90deg,var(--cyan),var(--blue),var(--purple));-webkit-background-clip:text;background-clip:text;color:transparent}
+.hero p{margin:0;max-width:840px;color:var(--muted);line-height:1.8}
+.toolbar{display:grid;grid-template-columns:170px 170px 150px auto;gap:10px;margin:20px 0 14px}
+select,input{width:100%;border:1px solid var(--line);border-radius:14px;background:var(--panel2);color:var(--text);padding:12px 14px;font:inherit;outline:none}
+select:focus,input:focus{border-color:var(--cyan)}
+button{border:1px solid var(--line);border-radius:12px;padding:11px 15px;background:var(--panel2);color:var(--text);cursor:pointer;font:inherit}
+button:hover{border-color:var(--cyan)}
+.insight{position:relative;overflow:hidden;border:1px solid var(--line);border-radius:22px;padding:20px;margin:18px 0;background:linear-gradient(135deg,rgba(73,225,255,.08),rgba(155,108,255,.07))}
+.insight h2{margin:0 0 10px;color:var(--cyan);font-size:20px}
+.insight p{margin:0;color:var(--text);line-height:1.85;white-space:pre-wrap}
+.reasons{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+.reason{background:rgba(73,225,255,.11);color:var(--cyan);border-radius:999px;padding:5px 10px;font-size:12px}
+.export-actions{display:flex;gap:8px;margin-top:16px}
+.school-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px;margin-top:20px}
+.school{position:relative;overflow:hidden;border:1px solid var(--line);border-radius:20px;padding:18px;background:var(--panel);transition:border-color .2s,transform .2s,box-shadow .2s}
+.school:hover{border-color:var(--cyan);transform:translateY(-2px);box-shadow:0 14px 40px rgba(0,0,0,.28)}
+.school h3{margin:0;font-size:19px}
+.score{font-size:30px;font-weight:900;margin-top:8px;color:var(--cyan)}
+.score.safe{color:var(--green)}.score.reach{color:var(--yellow)}
+.tags{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.tag{background:rgba(73,225,255,.11);color:var(--cyan);border-radius:8px;padding:4px 8px;font-size:12px}
+.tag.warn{background:rgba(255,209,102,.1);color:var(--yellow)}
+.bar{height:8px;border-radius:99px;background:#0a1830;overflow:hidden;margin-top:14px}
+.bar i{display:block;height:100%;border-radius:99px;background:linear-gradient(90deg,var(--green),var(--cyan),var(--purple))}
+.meta{color:var(--muted);font-size:13px;line-height:1.7;margin-top:10px}
+.note{margin-top:22px;padding:14px 16px;border-left:3px solid var(--cyan);background:rgba(73,225,255,.05);color:var(--muted);line-height:1.7;font-size:13px}
+@media(max-width:760px){.toolbar{grid-template-columns:1fr}.school-grid{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="topbar">
+    <div class="brand"><div class="mark">AI</div><div><b>考研数据与 AI 择校助手</b><small>合成数据 · 本地规则 · 结果可复核</small></div></div>
+    <div class="status"><span class="dot"></span>LOCAL ADVISOR READY</div>
+  </header>
+
+  <section class="hero">
+    <h1>AI 升学规划模拟</h1>
+    <p>用合成院校数据演示清洗、筛选、评分、结论依据与本地规则解读；所有数据均为虚构，不包含真实院校或个人成绩。</p>
+    <div class="toolbar">
+      <select id="region"><option value="全部">全部地区</option><option value="华东">华东</option><option value="华北">华北</option><option value="华南">华南</option><option value="西南">西南</option><option value="华中">华中</option></select>
+      <select id="major"><option value="全部">全部专业</option><option value="计算机">计算机</option><option value="人工智能">人工智能</option><option value="数据分析">数据分析</option><option value="软件工程">软件工程</option></select>
+      <input id="score" type="number" value="360" min="280" max="450" placeholder="预估分" />
+      <button id="resetBtn">重置条件</button>
+    </div>
+    <div class="export-actions"><button id="exportMd">导出 Markdown</button><button id="exportJson">导出 JSON</button></div>
+  </section>
+
+  <div class="insight" id="insightBox"></div>
+  <div class="school-grid" id="list"></div>
+  <div class="note">建议由本地规则计算：综合录取分、招生人数、城市偏好与分数匹配度。仅作为学习演示，不替代正式报考咨询。</div>
+</div>
+
+<script>
+const schools=[
+  {school:"江湾大学",region:"华东",major:"人工智能",admit:365,enroll:28,city:"上海",heat:88},
+  {school:"临海大学",region:"华东",major:"计算机",admit:352,enroll:45,city:"杭州",heat:82},
+  {school:"北景大学",region:"华北",major:"人工智能",admit:358,enroll:32,city:"北京",heat:85},
+  {school:"燕岭大学",region:"华北",major:"数据分析",admit:340,enroll:40,city:"天津",heat:75},
+  {school:"南岸大学",region:"华南",major:"软件工程",admit:345,enroll:36,city:"广州",heat:78},
+  {school:"花城大学",region:"华南",major:"数据分析",admit:332,enroll:50,city:"深圳",heat:74},
+  {school:"锦川大学",region:"西南",major:"计算机",admit:338,enroll:55,city:"成都",heat:72},
+  {school:"江城大学",region:"华中",major:"人工智能",admit:348,enroll:38,city:"武汉",heat:80},
+  {school:"湘江大学",region:"华中",major:"软件工程",admit:336,enroll:42,city:"长沙",heat:70},
+  {school:"云岭大学",region:"西南",major:"数据分析",admit:330,enroll:48,city:"昆明",heat:68}
+];
+function score(school,myScore){const gap=school.admit-myScore;let fit=Math.max(0,100-Math.max(0,gap)*4);fit+=Math.min(20,school.enroll/3);if(school.major==="数据分析"||school.major==="人工智能")fit+=5;if(school.heat>=82)fit+=2;return Math.round(Math.min(100,fit));}
+function fitLabel(value){return value>=85?"稳妥":value>=70?"匹配":"冲一冲";}
+function filteredList(){
+  const region=document.getElementById("region").value,major=document.getElementById("major").value,myScore=Number(document.getElementById("score").value)||360;
+  const list=schools.filter(s=>(region==="全部"||s.region===region)&&(major==="全部"||s.major===major)).map(s=>({...s,score:score(s,myScore),fit:fitLabel(score(s,myScore))})).sort((a,b)=>b.score-a.score||b.heat-a.heat);
+  return {list,myScore,region,major};
+}
+function renderInsight({list,myScore,region,major}){
+  if(!list.length){document.getElementById("insightBox").innerHTML="<h2>暂无匹配结果</h2><p>当前筛选条件下没有合成院校数据。</p>";return;}
+  const best=list[0],safe=list.filter(x=>x.fit==="稳妥"),reach=list.filter(x=>x.fit==="冲一冲");
+  const reasons=[];if(safe.length)reasons.push("稳妥选择 "+safe.length+" 所");if(reach.length)reasons.push("冲刺选择 "+reach.length+" 所");reasons.push("最高匹配分 "+best.score);if(region!=="全部")reasons.push("地区："+region);if(major!=="全部")reasons.push("专业："+major);
+  const text="以预估分 "+myScore+" 为例，优先关注匹配分最高的「"+best.school+"」。\n当前结果包含 "+list.length+" 所合成院校，其中"+reasons.join("、")+"。\n建议结合城市偏好、复试难度和历年波动进一步人工复核。\n本解读由本地规则生成，仅发送汇总统计，不上传任何个人数据。";
+  document.getElementById("insightBox").innerHTML="<h2>AI 规则解读</h2><p>"+text+"</p><div class='reasons'>"+reasons.map(r=>"<span class='reason'>"+r+"</span>").join("")+"</div>";
+}
+function render(){
+  const state=filteredList();renderInsight(state);
+  document.getElementById("list").innerHTML=state.list.map(s=>'<article class="school"><h3>'+s.school+'</h3><div class="score '+(s.fit==="稳妥"?"safe":s.fit==="冲一冲"?"reach":"")+'">'+s.score+' 分</div>'+
+    '<div class="tags"><span class="tag">'+s.region+'</span><span class="tag">'+s.major+'</span><span class="tag '+(s.fit==="稳妥"?"":"warn")+'">'+s.fit+'</span></div>'+
+    '<div class="bar"><i style="width:'+s.score+'%"></i></div>'+
+    '<div class="meta">录取分 '+s.admit+' · 招生 '+s.enroll+' 人 · '+s.city+' · 热度 '+s.heat+'</div></article>').join("") || '<p style="color:var(--muted)">没有匹配的合成数据。</p>';
+}
+function exportText(){const {list,myScore}=filteredList();const md="# 考研数据与 AI 择校建议\n\n> 合成演示数据，预估分："+myScore+"\n\n"+list.map(s=>"- "+s.school+" · "+s.major+" · "+s.score+" 分 · "+s.fit+"\n  录取分 "+s.admit+"，招生 "+s.enroll+" 人，"+s.city).join("\n");download("postgraduate_advice.md",md);}
+function exportJson(){const {list}=filteredList();download("postgraduate_advice.json",JSON.stringify(list,null,2));}
+function download(filename,content){const blob=new Blob([content],{type:"text/plain;charset=utf-8"});const url=URL.createObjectURL(blob);const a=document.createElement("a");a.href=url;a.download=filename;a.click();URL.revokeObjectURL(url);}
+["region","major","score"].forEach(id=>document.getElementById(id).addEventListener("change",render));document.getElementById("score").addEventListener("input",render);
+document.getElementById("resetBtn").addEventListener("click",()=>{document.getElementById("region").value="全部";document.getElementById("major").value="全部";document.getElementById("score").value="360";render();});
+document.getElementById("exportMd").addEventListener("click",exportText);document.getElementById("exportJson").addEventListener("click",exportJson);render();
+</script>
+</body>
+</html>

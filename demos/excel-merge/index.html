@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>子栖 · Excel / CSV 批量合并工具</title>
+<style>
+:root{--bg:#070b14;--panel:rgba(15,23,42,.82);--panel2:rgba(17,26,44,.9);--line:rgba(148,163,184,.22);--text:#e6edf7;--muted:#8ea2bf;--cyan:#22d3ee;--purple:#a855f7;--green:#34d399;--warn:#fbbf24}
+*{box-sizing:border-box}
+body{margin:0;min-height:100vh;color:var(--text);background:radial-gradient(circle at 15% 10%,rgba(34,211,238,.14),transparent 28rem),radial-gradient(circle at 85% 18%,rgba(168,85,247,.15),transparent 30rem),linear-gradient(145deg,#070b14,#0b1222 55%,#070b14);font-family:"Segoe UI","Microsoft YaHei",system-ui,sans-serif}
+.wrap{max-width:1180px;margin:0 auto;padding:36px 20px 64px}
+.top{display:flex;align-items:flex-end;justify-content:space-between;gap:24px;margin-bottom:24px}
+.badge{display:inline-flex;align-items:center;gap:8px;padding:8px 14px;border:1px solid rgba(34,211,238,.45);border-radius:999px;background:rgba(34,211,238,.08);color:#7deffd;font-size:13px;letter-spacing:1px}
+h1{margin:12px 0 8px;font-size:36px;letter-spacing:2px}
+.sub{max-width:720px;margin:0;color:var(--muted);line-height:1.85}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:22px;padding:20px;margin-top:20px;box-shadow:0 24px 70px rgba(2,6,23,.45);backdrop-filter:blur(14px)}
+.panel-head{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:16px}
+.panel-title{font-weight:700;letter-spacing:1px;color:#cfe9ff}
+.dropzone{border:1.5px dashed rgba(103,232,249,.35);border-radius:18px;padding:24px;text-align:center;color:var(--muted);cursor:pointer;transition:.25s;background:rgba(15,23,42,.5)}
+.dropzone:hover,.dropzone.drag{border-color:#22d3ee;background:rgba(34,211,238,.07);color:#e6f9ff}
+.dropzone strong{color:#7deffd}
+.actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:14px}
+button{border:0;border-radius:12px;padding:11px 16px;background:linear-gradient(90deg,#0891b2,#7c3aed);color:#fff;font-weight:700;cursor:pointer;box-shadow:0 10px 24px rgba(14,116,144,.22)}
+button:hover{transform:translateY(-1px)}
+button.ghost{background:rgba(255,255,255,.06);border:1px solid var(--line);box-shadow:none;color:var(--text)}
+button:disabled{opacity:.45;cursor:not-allowed;transform:none}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-top:16px}
+.stat{background:var(--panel2);border:1px solid var(--line);border-radius:16px;padding:15px}
+.stat b{display:block;font-size:24px;color:#7deffd}
+.stat span{color:var(--muted);font-size:12px}
+.toolbar{display:grid;grid-template-columns:1fr auto auto;gap:12px;margin-bottom:14px}
+.toolbar label{color:var(--muted);font-size:12px;display:flex;flex-direction:column;gap:6px}
+select,input[type=text]{background:#0a111f;border:1px solid var(--line);color:var(--text);border-radius:11px;padding:10px 12px}
+.table-wrap{max-height:420px;overflow:auto;border:1px solid var(--line);border-radius:16px;background:#0b1322}
+table{width:100%;border-collapse:collapse;font-size:13px;min-width:640px}
+th,td{padding:10px 12px;text-align:left;border-bottom:1px solid rgba(148,163,184,.14);white-space:nowrap}
+th{position:sticky;top:0;background:#101b30;color:#9ec7ff;z-index:1}
+tr:hover td{background:rgba(34,211,238,.04)}
+.muted{color:var(--muted)}
+.toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%) translateY(20px);background:#0f766e;border:1px solid #2dd4bf;color:#eafffb;padding:12px 18px;border-radius:999px;opacity:0;pointer-events:none;transition:.25s}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div>
+      <span class="badge">Python 思路 · 浏览器本地实现</span>
+      <h1>Excel / CSV 批量合并工具</h1>
+      <p class="sub">选择多个 CSV 文件，自动识别表头、去重合并、统计字段质量并导出清洗结果。所有数据仅在本机浏览器处理，不上传。</p>
+    </div>
+  </header>
+  <section class="panel">
+    <div class="panel-head"><span class="panel-title">导入数据</span><span class="muted">支持 UTF-8 / GBK 自动尝试</span></div>
+    <div class="dropzone" id="dropzone"><strong>拖入 CSV 文件到这里</strong><br>或点击选择文件，可多选<input id="files" type="file" accept=".csv,text/csv" multiple hidden /></div>
+    <div class="actions">
+      <button id="mergeBtn">合并预览</button>
+      <button class="ghost" id="sampleBtn">载入合成示例</button>
+      <button class="ghost" id="downloadBtn" disabled>下载 merged.csv</button>
+      <button class="ghost" id="clearBtn">清空</button>
+    </div>
+    <div class="stats">
+      <div class="stat"><b id="stFiles">0</b><span>导入文件</span></div>
+      <div class="stat"><b id="stRows">0</b><span>有效数据行</span></div>
+      <div class="stat"><b id="stDup">0</b><span>已去除重复</span></div>
+      <div class="stat"><b id="stCols">0</b><span>字段数量</span></div>
+    </div>
+  </section>
+  <section class="panel" id="resultPanel" style="display:none">
+    <div class="panel-head"><span class="panel-title">合并结果</span><span id="summary" class="muted"></span></div>
+    <div class="toolbar">
+      <label>去重依据<select id="dedupeKey"><option value="__all__">整行完全一致</option></select></label>
+      <label>过滤<select id="filterCol"><option value="">全部字段</option></select></label>
+      <label>关键字<input type="text" id="filterText" placeholder="输入关键字" /></label>
+    </div>
+    <div class="table-wrap"><table id="table"><thead></thead><tbody></tbody></table></div>
+  </section>
+</div>
+<div class="toast" id="toast"></div>
+<script>
+const state={groups:[],headers:[],rows:[],rawRows:[],displayRows:[],duplicates:0};
+const $=id=>document.getElementById(id);
+const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+function toast(msg){const t=$("toast");t.textContent=msg;t.classList.add("show");setTimeout(()=>t.classList.remove("show"),1800);}
+function normalizeCell(v){return String(v??"").replace(/[\uFF10-\uFF19]/g,d=>String.fromCharCode(d.charCodeAt(0)-0xFEE0)).trim();}
+function parseCsv(text){const rows=[];let row=[],cell="",q=false;for(let i=0;i<text.length;i++){const c=text[i];if(q){if(c==='"'){if(text[i+1]==='"'){cell+='"';i++;}else{q=false;}}else cell+=c;}else if(c==='"'){q=true;}else if(c===','){row.push(cell);cell="";}else if(c==='\n'){row.push(cell);rows.push(row);row=[];cell="";}else if(c!=='\r'){cell+=c;}}if(cell!==""||row.length){row.push(cell);rows.push(row);}return rows.map(r=>r.map(normalizeCell)).filter(r=>r.some(c=>c!==""));}
+function readFile(file){return file.arrayBuffer().then(buf=>{try{return new TextDecoder('utf-8',{fatal:true}).decode(buf);}catch(e){return new TextDecoder('gbk').decode(buf);}});}
+async function mergeFiles(files){if(!files.length)return toast("请先选择文件");const groups=[];let total=0;for(const file of files){const text=await readFile(file);const rows=parseCsv(text);if(!rows.length)continue;groups.push({name:file.name,rows});total+=Math.max(0,rows.length-1);}if(!groups.length)return toast("没有读取到有效 CSV 数据");state.groups=groups;buildMerge();toast("已读取 "+groups.length+" 个文件，共 "+total+" 行");}
+function buildMerge(){const heads=[...new Set(state.groups.map(g=>g.rows[0]))];const used={};state.headers=heads.map((h,i)=>{const key=h||("字段"+(i+1));let name=key,n=1;while(used[name]){n++;name=key+"_"+n;}used[name]=true;return name;});const keyMap=new Map(heads.map((h,i)=>[h,i]));state.rawRows=[];state.groups.forEach(g=>{for(let i=1;i<g.rows.length;i++){const out=new Array(state.headers.length).fill("");g.rows[i].forEach((cell,j)=>{if(j<g.rows[0].length&&keyMap.has(g.rows[0][j]))out[keyMap.get(g.rows[0][j])]=cell;});state.rawRows.push(out);}});rebuildOptions();mergeAndRender();}
+function rebuildOptions(){$("dedupeKey").innerHTML='<option value="__all__">整行完全一致</option>'+state.headers.map((h,i)=>'<option value="'+i+'">'+esc(h)+'</option>').join("");$("filterCol").innerHTML='<option value="">全部字段</option>'+state.headers.map((h,i)=>'<option value="'+i+'">'+esc(h)+'</option>').join("");}
+function mergeAndRender(){const key=$("dedupeKey").value,seen=new Set(),rows=[];state.rawRows.forEach(r=>{const k=key==="__all__"?r.join("|"):(r[+key]||"");if(seen.has(k)){state.duplicates++;return;}seen.add(k);rows.push(r);});state.rows=rows;state.displayRows=rows;$("resultPanel").style.display="block";$("stFiles").textContent=state.groups.length;$("stRows").textContent=state.rawRows.length;$("stDup").textContent=state.duplicates;$("stCols").textContent=state.headers.length;$("summary").textContent="去重后 "+rows.length+" 行";$("downloadBtn").disabled=!rows.length;applyFilter();}
+function applyFilter(){const col=$("filterCol").value,txt=$("filterText").value.trim().toLowerCase();state.displayRows=state.rows.filter(r=>!txt||(col===""?r.join(" "):r[+col]||"").toLowerCase().includes(txt));renderTable();}
+function renderTable(){const head='<tr>'+state.headers.map(h=>'<th>'+esc(h)+'</th>').join("")+'</tr>';const body=state.displayRows.slice(0,200).map(r=>'<tr>'+r.map(c=>'<td>'+esc(c)+'</td>').join("")+'</tr>').join("");$("table").innerHTML='<thead>'+head+'</thead><tbody>'+(body||'<tr><td colspan="'+state.headers.length+'">暂无数据</td></tr>')+'</tbody>';}
+function downloadCsv(){if(!state.rows.length)return;const csv=[state.headers].concat(state.rows).map(r=>r.map(c=>'"'+String(c).replace(/"/g,'""')+'"').join(",")).join("\n");const a=document.createElement("a");a.href=URL.createObjectURL(new Blob(["\ufeff"+csv],{type:"text/csv;charset=utf-8"}));a.download="merged.csv";a.click();URL.revokeObjectURL(a.href);}
+$("dropzone").addEventListener("click",()=>$("files").click());
+$("dropzone").addEventListener("dragover",e=>{e.preventDefault();$("dropzone").classList.add("drag");});
+$("dropzone").addEventListener("dragleave",()=>$("dropzone").classList.remove("drag"));
+$("dropzone").addEventListener("drop",e=>{e.preventDefault();$("dropzone").classList.remove("drag");mergeFiles(e.dataTransfer.files);});
+$("files").addEventListener("change",e=>mergeFiles(e.target.files));
+$("mergeBtn").addEventListener("click",()=>mergeFiles($("files").files));
+$("downloadBtn").addEventListener("click",downloadCsv);
+$("clearBtn").addEventListener("click",()=>{state.groups=[];state.headers=[];state.rows=[];state.rawRows=[];state.displayRows=[];state.duplicates=0;$("files").value="";$("resultPanel").style.display="none";$("stFiles").textContent="0";$("stRows").textContent="0";$("stDup").textContent="0";$("stCols").textContent="0";toast("已清空");});
+$("dedupeKey").addEventListener("change",mergeAndRender);
+$("filterCol").addEventListener("change",applyFilter);
+$("filterText").addEventListener("input",applyFilter);
+$("sampleBtn").addEventListener("click",()=>{const sample=[['门店名称,月份,营收,订单数,客单价,负责人','青山店,2026-08,128600,486,264.61,子栖','星河店,2026-08,152300,534,285.21,子栖','青山店,2026-08,128600,486,264.61,子栖','梧桐店,2026-08,98200,351,279.77,子栖'],['门店名称,月份,营收,订单数,客单价,负责人','青山店,2026-09,135900,502,270.72,子栖','星河店,2026-09,168400,577,291.86,子栖','南溪店,2026-09,116500,423,275.41,子栖']];state.groups=sample.map(f=>({name:f[0],rows:parseCsv(f.join("\n"))}));buildMerge();toast("已载入 2 份合成示例数据");});
+</script>
+</body>
+</html>

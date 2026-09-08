@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>子栖 · 词云生成器</title>
+<style>
+:root{--bg:#070b14;--panel:#101829;--panel2:#0b1220;--line:#24314d;--text:#e6edf7;--muted:#8ea2bf;--cyan:#22d3ee;--purple:#a855f7;--green:#34d399;--yellow:#fbbf24;--pink:#fb7185}
+*{box-sizing:border-box}
+body{margin:0;min-height:100vh;background:radial-gradient(circle at 15% 10%,rgba(34,211,238,.13),transparent 28rem),radial-gradient(circle at 85% 15%,rgba(168,85,247,.13),transparent 26rem),var(--bg);color:var(--text);font-family:"Segoe UI","Microsoft YaHei",system-ui,sans-serif}
+.wrap{width:min(1000px,calc(100% - 32px));margin:0 auto;padding:32px 0 60px}
+.top{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;flex-wrap:wrap}
+h1{margin:0 0 8px;font-size:30px}
+.sub{margin:0;color:var(--muted);line-height:1.7}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:20px;padding:18px;margin-top:20px;box-shadow:0 20px 60px rgba(0,0,0,.3)}
+textarea{width:100%;box-sizing:border-box;min-height:150px;resize:vertical;border:1px solid var(--line);border-radius:14px;background:var(--panel2);color:var(--text);padding:12px;font:14px/1.7 "Microsoft YaHei",sans-serif;outline:none}
+textarea:focus{border-color:var(--cyan)}
+.toolbar{display:grid;grid-template-columns:110px 110px 1fr auto auto;gap:10px;margin-top:14px;align-items:center}
+input,select,button{border:1px solid var(--line);border-radius:12px;background:var(--panel2);color:var(--text);padding:10px 12px;font:inherit;outline:none}
+button{cursor:pointer}
+button:hover{border-color:var(--cyan)}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:14px}
+.stat{background:var(--panel2);border:1px solid var(--line);border-radius:14px;padding:12px;text-align:center}
+.stat b{display:block;font-size:24px;color:var(--cyan)}
+.stat span{color:var(--muted);font-size:12px}
+canvas{width:100%;height:440px;margin-top:14px;border-radius:16px;border:1px solid var(--line);background:#0a101d;display:block}
+.word-list{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+.chip{background:var(--panel2);border:1px solid var(--line);border-radius:999px;padding:6px 10px;color:var(--muted);font-size:12px}
+.chip b{color:var(--text)}
+@media(max-width:720px){.toolbar{grid-template-columns:1fr}.stats{grid-template-columns:1fr 1fr}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top"><div><h1>词云生成器</h1><p class="sub">输入文本或单词，按词频生成词云；支持停用词、数量限制和 PNG 导出，数据只在本机处理。</p></div><button id="exportBtn">导出 PNG</button></header>
+
+  <section class="panel">
+    <textarea id="src">Python 数据分析 可视化 自动化 AI 作品集 子栖 Python 数据 可视化 Python 自动化 数据分析 药学 AI 作品集 数据清洗 报表</textarea>
+    <div class="toolbar">
+      <input id="topN" type="number" value="60" min="5" max="120" title="最多词数" />
+      <input id="minFreq" type="number" value="1" min="1" max="20" title="最小词频" />
+      <select id="palette"><option value="tech">科技霓虹</option><option value="ocean">海洋蓝紫</option><option value="sunset">日落暖色</option><option value="mint">薄荷绿色</option></select>
+      <button id="genBtn">重新生成</button>
+      <button id="sampleBtn">载入示例</button>
+    </div>
+    <div class="stats" id="stats"></div>
+    <canvas id="c" width="900" height="440"></canvas>
+    <div class="word-list" id="wordList"></div>
+  </section>
+</div>
+
+<script>
+const stopwords=new Set(["的","了","和","与","及","或","在","是","有","我","你","他","她","它","我们","你们","他们","这","那","一个","进行","可以","通过","以及"]);
+const palettes={
+  tech:["#22d3ee","#a855f7","#fbbf24","#34d399","#fb7185","#818cf8"],
+  ocean:["#60a5fa","#22d3ee","#818cf8","#c084fc","#93c5fd","#67e8f9"],
+  sunset:["#fb923c","#f472b6","#fbbf24","#f87171","#fde68a","#e879f9"],
+  mint:["#34d399","#2dd4bf","#a3e635","#4ade80","#5eead4","#86efac"]
+};
+function tokenize(text){return text.toLowerCase().split(/[\s,，。；;、\n\r\t]+/).map(w=>w.replace(/[^\w\u4e00-\u9fa5+-]/g,"")).filter(w=>w && !stopwords.has(w));}
+function freq(text){const map=new Map();tokenize(text).forEach(w=>map.set(w,(map.get(w)||0)+1));return [...map.entries()].map(([w,n])=>({w,n})).sort((a,b)=>b.n-a.n);}
+function draw(){
+  const canvas=document.getElementById("c"),ctx=canvas.getContext("2d");
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  const list=freq(document.getElementById("src").value).filter(x=>x.n>=Number(document.getElementById("minFreq").value||1)).slice(0,Number(document.getElementById("topN").value||60));
+  const colors=palettes[document.getElementById("palette").value]||palettes.tech;
+  const max=list.length?list[0].n:1;
+  const placed=[];
+  list.forEach((item,index)=>{
+    const size=18+Math.round(40*item.n/max);
+    const font=size+"px Microsoft YaHei";
+    ctx.font=font;const width=ctx.measureText(item.w).width,height=size*1.15;
+    let x=0,y=0,ok=false,attempt=0;
+    while(attempt<220){
+      x=18+Math.random()*(canvas.width-width-30);y=18+Math.random()*(canvas.height-height-30);
+      const overlap=placed.some(p=>x<p.x+p.w+6 && x+width+6>p.x && y<p.y+p.h+6 && y+height+6>p.y);
+      if(!overlap){ok=true;break;}attempt++;
+    }
+    if(!ok){x=18+(index*31)%(canvas.width-width-30);y=18+(index*47)%(canvas.height-height-30);}
+    placed.push({x,y,w:width,h:height});
+    ctx.font=font;ctx.fillStyle=colors[index%colors.length];ctx.textBaseline="top";ctx.fillText(item.w,x,y);
+  });
+  document.getElementById("stats").innerHTML=[
+    ["有效词数",list.length],["文本总词数",tokenize(document.getElementById("src").value).length],["最高词频",max]
+  ].map(([k,v])=>'<div class="stat"><b>'+v+'</b><span>'+k+'</span></div>').join("");
+  document.getElementById("wordList").innerHTML=list.slice(0,24).map(x=>'<span class="chip">'+x.w+' <b>×'+x.n+'</b></span>').join("");
+}
+function exportPng(){const a=document.createElement("a");a.href=document.getElementById("c").toDataURL("image/png");a.download="wordcloud.png";a.click();}
+document.getElementById("genBtn").addEventListener("click",draw);
+document.getElementById("exportBtn").addEventListener("click",exportPng);
+document.getElementById("sampleBtn").addEventListener("click",()=>{document.getElementById("src").value="Python 数据分析 可视化 自动化 AI 作品集 子栖 Python 数据 可视化 Python 自动化 数据分析 药学 AI 作品集 数据清洗 报表";draw();});
+["topN","minFreq","palette"].forEach(id=>document.getElementById(id).addEventListener("change",draw));
+draw();
+</script>
+</body>
+</html>

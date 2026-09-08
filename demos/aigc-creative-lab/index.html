@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>子栖 · AIGC 创意作品空间</title>
+<style>
+:root{--bg:#050610;--panel:#0d1020;--text:#f5f7ff;--muted:#98a4c5;--cyan:#58e9ff;--purple:#735cff;--pink:#f472b6;--yellow:#ffd166;--line:rgba(255,255,255,.16)}
+*{box-sizing:border-box}
+html,body{margin:0;min-height:100%}
+body{font-family:"Inter","Microsoft YaHei",system-ui,sans-serif;color:var(--text);background:#050610;overflow-x:hidden}
+body::before{content:"";position:fixed;inset:0;pointer-events:none;background:linear-gradient(rgba(255,255,255,.028) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.028) 1px,transparent 1px);background-size:44px 44px;mask-image:linear-gradient(#000,transparent 96%)}
+.orb{position:fixed;width:420px;height:420px;border-radius:50%;filter:blur(100px);opacity:.28;pointer-events:none;background:#624aff;top:-140px;left:-120px}
+.orb.b{background:#00d5ff;left:auto;right:-150px;top:40%}
+.orb.c{background:#f472b6;left:38%;right:auto;top:auto;bottom:-200px}
+.wrap{position:relative;z-index:2;width:min(1200px,calc(100% - 40px));margin:0 auto;padding:30px 0 80px}
+.nav{display:flex;align-items:center;justify-content:space-between;margin-bottom:22px}
+.logo{display:flex;align-items:center;gap:12px;font-weight:850;letter-spacing:.08em}
+.mark{width:35px;height:35px;border-radius:11px;background:linear-gradient(135deg,#735cff,#00e8ff);box-shadow:0 0 28px rgba(103,95,255,.53);display:grid;place-items:center}
+.mark::after{content:"✦"}
+.nav .status{display:flex;align-items:center;gap:8px;color:#67eaff;font-size:12px;letter-spacing:.1em}
+.dot{width:8px;height:8px;border-radius:50%;background:#67eaff;box-shadow:0 0 13px #67eaff;animation:pulse 1.5s infinite}
+@keyframes pulse{50%{opacity:.35;transform:scale(.7)}}
+.hero{padding:52px 0 58px;max-width:880px}
+.kicker{color:#67eaff;font-size:12px;font-weight:800;letter-spacing:.23em;text-transform:uppercase}
+.hero h1{font-size:clamp(42px,7vw,76px);letter-spacing:-.055em;line-height:1.02;margin:18px 0}
+.gradient{color:transparent;background:linear-gradient(95deg,#fff,#a89bff,#58e9ff,#fff);background-size:200% auto;-webkit-background-clip:text;background-clip:text;animation:shine 7s linear infinite}
+@keyframes shine{to{background-position:200% center}}
+.hero p{color:var(--muted);line-height:1.85;font-size:16px;max-width:650px}
+.tabs{display:flex;gap:10px;overflow-x:auto;padding:4px 2px 18px;scrollbar-width:none;position:sticky;top:0;z-index:10;background:linear-gradient(#050610 70%,transparent)}
+.tabs button{border:1px solid rgba(255,255,255,.18);background:rgba(255,255,255,.05);color:#aab4d2;border-radius:999px;padding:10px 16px;cursor:pointer;white-space:nowrap;font:inherit;font-size:13px;transition:.25s}
+.tabs button:hover{color:#fff;border-color:rgba(255,255,255,.45)}
+.tabs button.active{background:linear-gradient(135deg,#735cff,#159fe8);color:#fff;border-color:transparent;box-shadow:0 0 24px rgba(102,92,255,.35)}
+.grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px;align-items:stretch}
+.card{position:relative;overflow:hidden;min-height:300px;border:1px solid rgba(255,255,255,.14);border-radius:24px;background:linear-gradient(145deg,rgba(255,255,255,.1),rgba(255,255,255,.03));box-shadow:0 20px 55px rgba(0,0,0,.35);cursor:pointer;transition:transform .35s,border-color .35s,box-shadow .35s}
+.card:hover{transform:translateY(-8px);border-color:rgba(255,255,255,.5);box-shadow:0 26px 60px rgba(0,0,0,.45)}
+.art{position:absolute;inset:0;display:grid;place-items:center;overflow:hidden}
+.art::before{content:"";position:absolute;inset:-30%;background:conic-gradient(from 180deg,transparent,rgba(255,255,255,.2),transparent);animation:rotate 8s linear infinite;opacity:.35}
+@keyframes rotate{to{transform:rotate(360deg)}}
+.art span{position:relative;z-index:1;font-size:82px;filter:drop-shadow(0 14px 30px rgba(0,0,0,.4))}
+.meta{position:absolute;left:0;right:0;bottom:0;padding:20px;background:linear-gradient(transparent,rgba(5,6,16,.95));text-align:left}
+.meta small{display:inline-block;border:1px solid rgba(255,255,255,.22);background:rgba(0,0,0,.35);border-radius:999px;padding:4px 8px;color:#c9d4ff;font-size:11px;margin-bottom:9px}
+.meta h2{margin:0 0 6px;font-size:20px}
+.meta p{margin:0;color:var(--muted);font-size:13px;line-height:1.6}
+.modal{position:fixed;inset:0;z-index:30;display:none;place-items:center;padding:20px;background:rgba(4,6,12,.75);backdrop-filter:blur(10px)}
+.modal.open{display:grid}
+.modal-card{width:min(600px,100%);border:1px solid rgba(255,255,255,.18);border-radius:26px;background:#0e1428;padding:28px;box-shadow:0 30px 90px rgba(0,0,0,.5)}
+.modal-card small{color:#67eaff}
+.modal-card h2{margin:10px 0}
+.modal-card p{color:var(--muted);line-height:1.85;margin:0 0 18px;white-space:pre-wrap}
+.modal-card button{border:1px solid rgba(255,255,255,.18);background:rgba(255,255,255,.05);color:var(--text);border-radius:12px;padding:10px 16px;cursor:pointer;font:inherit}
+.note{margin-top:28px;color:var(--muted);font-size:13px;line-height:1.8;border-left:3px solid #735cff;padding-left:14px}
+@media(max-width:820px){.grid{grid-template-columns:1fr}.hero{padding:40px 0 46px}}
+</style>
+</head>
+<body>
+<div class="orb"></div><div class="orb b"></div><div class="orb c"></div>
+<div class="wrap">
+  <nav class="nav">
+    <div class="logo"><div class="mark"></div><span>子栖 · Creative Lab</span></div>
+    <div class="status"><span class="dot"></span>LOCAL PORTFOLIO</div>
+  </nav>
+
+  <header class="hero">
+    <div class="kicker">AIGC Capability · Synthetic Showcase</div>
+    <h1><span class="gradient">创意作品空间</span></h1>
+    <p>展示基于提示词、Python 批处理和视觉生成思路的 AIGC 作品分类与交付能力。当前作品为 CSS 合成占位效果，可后续替换为个人原创作品。</p>
+  </header>
+
+  <div class="tabs" id="tabs">
+    <button data-filter="all" class="active">全部</button>
+    <button data-filter="illustration">插画</button>
+    <button data-filter="poster">海报</button>
+    <button data-filter="ecommerce">电商视觉</button>
+    <button data-filter="character">角色设定</button>
+    <button data-filter="photo">摄影后期</button>
+  </div>
+
+  <div class="grid" id="grid"></div>
+  <div class="note">本页面只展示 AIGC 创作思路与交付形式，不包含原始图片或第三方版权素材。正式作品集可替换为你自己的生成内容。</div>
+</div>
+
+<div class="modal" id="modal" role="dialog" aria-modal="true">
+  <div class="modal-card">
+    <small id="modalCategory"></small>
+    <h2 id="modalTitle"></h2>
+    <p id="modalText"></p>
+    <button id="modalClose">关闭</button>
+  </div>
+</div>
+
+<script>
+const works=[
+  {title:"星空药学插画",category:"illustration",emoji:"✦",text:"以药学分子结构为灵感，生成深色科技插画，适合作品集封面与知识科普配图。"},
+  {title:"城市数据海报",category:"poster",emoji:"◈",text:"用渐变几何与数据节点表达城市分析主题，适合作品集展示、报告封面和活动海报。"},
+  {title:"本地门店促销主图",category:"ecommerce",emoji:"◇",text:"生成通用门店促销视觉，突出价格、卖点和交付节奏，可替换为正式品牌素材。"},
+  {title:"子栖个人 IP 角色",category:"character",emoji:"☾",text:"建立统一的个人形象符号，用于头像、项目封面和内容账号的视觉一致性。"},
+  {title:"风光摄影氛围重塑",category:"photo",emoji:"◌",text:"对合成风景素材进行调色、氛围增强和构图优化，展示后期处理思路。"},
+  {title:"Python 学习插画",category:"illustration",emoji:"⌁",text:"把循环、数据流、函数等概念转化为可读插画，降低教学内容的记忆门槛。"},
+  {title:"考研数据报告封面",category:"poster",emoji:"▣",text:"将择校数据、趋势和结论组织成简洁报告封面，适合咨询与报告交付。"},
+  {title:"盲盒角色收藏图鉴",category:"character",emoji:"✧",text:"设计稀有度视觉层级和收藏图鉴排版，用于趣味工具与品牌周边展示。"},
+  {title:"本地生活服务视觉",category:"ecommerce",emoji:"◎",text:"生成门店服务卡片、卖点标签和氛围背景，适合本地商家交付方案。"}
+];
+const catName={illustration:"插画",poster:"海报",ecommerce:"电商视觉",character:"角色设定",photo:"摄影后期"};
+function render(filter){
+  const list=filter==="all"?works:works.filter(w=>w.category===filter);
+  document.getElementById("grid").innerHTML=list.map(w=>{
+    const i=works.indexOf(w);
+    const bg=["linear-gradient(135deg,#16324f,#6f8bff)","linear-gradient(135deg,#3c1a5c,#f472b6)","linear-gradient(135deg,#0f4c4c,#67e8f9)","linear-gradient(135deg,#3a2a12,#fbbf24)"][i%4];
+    return '<article class="card" data-index="'+i+'"><div class="art" style="background:'+bg+'"><span>'+w.emoji+'</span></div><div class="meta"><small>'+catName[w.category]+'</small><h2>'+w.title+'</h2><p>'+w.text.split("，")[0]+'</p></div></article>';
+  }).join("");
+}
+function bindCards(){
+  document.querySelectorAll(".card").forEach(card=>{
+    card.addEventListener("click",()=>{
+      const w=works[Number(card.dataset.index)];
+      document.getElementById("modalCategory").textContent=catName[w.category];
+      document.getElementById("modalTitle").textContent=w.title;
+      document.getElementById("modalText").textContent=w.text+"\n\n分类："+catName[w.category];
+      document.getElementById("modal").classList.add("open");
+    });
+  });
+}
+document.querySelectorAll("#tabs button").forEach(btn=>{
+  btn.addEventListener("click",()=>{
+    document.querySelectorAll("#tabs button").forEach(b=>b.classList.remove("active"));
+    btn.classList.add("active");render(btn.dataset.filter);bindCards();
+  });
+});
+document.getElementById("modalClose").addEventListener("click",()=>document.getElementById("modal").classList.remove("open"));
+document.getElementById("modal").addEventListener("click",e=>{if(e.target===document.getElementById("modal"))document.getElementById("modal").classList.remove("open");});
+render("all");bindCards();
+</script>
+</body>
+</html>

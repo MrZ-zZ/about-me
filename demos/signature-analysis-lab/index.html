@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>子栖 · 请求签名分析实验室</title>
+<style>
+:root{--bg:#0b1120;--panel:#111a2e;--panel2:#0f172a;--text:#f8fafc;--muted:#a9b7cc;--accent:#67e8f9;--border:rgba(148,163,184,.22);--danger:#fb7185}
+*{box-sizing:border-box}
+body{margin:0;min-height:100vh;color:var(--text);background:radial-gradient(circle at 15% 10%,rgba(34,211,238,.12),transparent 28rem),radial-gradient(circle at 85% 15%,rgba(168,85,247,.12),transparent 26rem),var(--bg);font-family:"Segoe UI","Microsoft YaHei",system-ui,sans-serif}
+.wrap{max-width:900px;margin:0 auto;padding:32px 20px 60px}
+h1{margin:0 0 8px;font-size:30px}
+.sub{margin:0;color:var(--muted);line-height:1.7}
+.panel{background:var(--panel);border:1px solid var(--border);border-radius:20px;padding:20px;margin-top:22px}
+label{display:flex;flex-direction:column;gap:7px;font-size:13px;color:var(--muted);margin-bottom:14px}
+input,textarea,select{background:var(--panel2);border:1px solid var(--border);border-radius:12px;padding:11px 12px;color:var(--text);font:inherit;width:100%}
+textarea{min-height:90px;resize:vertical;font-family:Consolas,monospace}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px}
+button{border:0;border-radius:12px;padding:11px 16px;background:var(--accent);color:#0b1120;font-weight:600;cursor:pointer}
+.out{background:var(--panel2);border:1px solid var(--border);border-radius:12px;padding:14px;font-family:Consolas,monospace;font-size:13px;line-height:1.7;overflow-wrap:anywhere;min-height:40px;white-space:pre-wrap}
+.tag{display:inline-block;padding:4px 8px;border-radius:8px;background:rgba(103,232,249,.12);color:var(--accent);font-size:12px;margin:0 4px 4px 0}
+.note{margin-top:20px;color:var(--muted);font-size:13px;line-height:1.7;border-left:3px solid var(--accent);padding-left:12px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>请求签名分析实验室</h1>
+  <p class="sub">用合成参数演示 Base64、SHA-256、HMAC-SHA256 等常见签名流程，帮助理解接口参数构造；不针对任何真实平台，不提供破解服务。</p>
+
+  <div class="panel">
+    <div class="grid">
+      <label>应用标识
+        <input id="appId" value="demo_app_2026" />
+      </label>
+      <label>密钥（仅本地使用）
+        <input id="secret" value="demo_secret" />
+      </label>
+    </div>
+    <label>参数文本（每行一个 key=value）
+      <textarea id="params">page=1
+size=20
+city=上海</textarea>
+    </label>
+    <div class="grid">
+      <label>算法
+        <select id="algo">
+          <option value="sha256">SHA-256</option>
+          <option value="hmac">HMAC-SHA256</option>
+          <option value="base64">Base64</option>
+          <option value="fnv">FNV-1a 快速哈希</option>
+        </select>
+      </label>
+      <label>时间戳
+        <input id="timestamp" value="1760000000" />
+      </label>
+      <label>随机数
+        <input id="nonce" value="abc123" />
+      </label>
+    </div>
+    <button id="runBtn">生成签名</button>
+  </div>
+
+  <div class="panel">
+    <h2 style="margin:0 0 10px;font-size:18px">结果</h2>
+    <div class="out" id="out">点击“生成签名”查看结果。</div>
+  </div>
+
+  <div class="note">
+    演示说明：真实接口的签名通常由「时间戳 + 随机数 + 参数排序 + 密钥」拼接后计算哈希。本项目只展示通用原理，参数均为合成示例，不包含真实平台、真实用户或真实密钥。
+  </div>
+</div>
+
+<script>
+function normalizeParams(text){
+  return text.split(/\r?\n/).map(s=>s.trim()).filter(Boolean).map(line=>{
+    const i=line.indexOf('='); return i>=0 ? [line.slice(0,i).trim(),line.slice(i+1).trim()] : [line,''];
+  });
+}
+function canonical(params){
+  return params.slice().sort((a,b)=>a[0].localeCompare(b[0])).map(([k,v])=>k+'='+v).join('&');
+}
+function fnv1a(str){
+  let h=2166136261;
+  for(let i=0;i<str.length;i++){ h^=str.charCodeAt(i); h=Math.imul(h,16777619); }
+  return (h>>>0).toString(16).padStart(8,'0');
+}
+function b64(str){
+  return btoa(unescape(encodeURIComponent(str)));
+}
+async function sha256(text){
+  const buf=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(text));
+  return [...new Uint8Array(buf)].map(b=>b.toString(16).padStart(2,'0')).join('');
+}
+async function hmacSha256(key,text){
+  const enc=new TextEncoder();
+  const k=await crypto.subtle.importKey('raw',enc.encode(key),{name:'HMAC',hash:'SHA-256'},false,['sign']);
+  const sig=await crypto.subtle.sign('HMAC',k,enc.encode(text));
+  return [...new Uint8Array(sig)].map(b=>b.toString(16).padStart(2,'0')).join('');
+}
+async function run(){
+  const out=document.getElementById('out');
+  const appId=document.getElementById('appId').value.trim();
+  const secret=document.getElementById('secret').value.trim();
+  const timestamp=document.getElementById('timestamp').value.trim();
+  const nonce=document.getElementById('nonce').value.trim();
+  const algo=document.getElementById('algo').value;
+  const params=normalizeParams(document.getElementById('params').value);
+  const canonicalText=canonical(params);
+  const base=[appId,timestamp,nonce,canonicalText].filter(Boolean).join('&');
+  let result;
+  if(algo==='sha256') result='SHA-256('+base+') = '+await sha256(base);
+  else if(algo==='hmac') result='HMAC-SHA256(key='+secret+', '+base+') = '+await hmacSha256(secret,base);
+  else if(algo==='base64') result='Base64('+base+') = '+b64(base);
+  else result='FNV-1a('+base+') = '+fnv1a(base);
+  out.textContent='原始参数：\n'+canonicalText+'\n\n拼接串：\n'+base+'\n\n'+result;
+}
+document.getElementById('runBtn').addEventListener('click',run);
+</script>
+</body>
+</html>

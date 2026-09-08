@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="zh-CN" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>北京租房数据分析流水线 · 子栖</title>
+<style>
+  :root { color-scheme: dark; --bg:#0f172a; --panel:rgba(30,41,59,.86); --border:rgba(148,163,184,.3); --text:#f8fafc; --muted:#b6c2d4; --accent:#5eead4; --accent2:#38bdf8; }
+  * { box-sizing:border-box; }
+  body { margin:0; background:radial-gradient(circle at 15% 10%, rgba(94,234,212,.14), transparent 34rem), radial-gradient(circle at 85% 20%, rgba(56,189,248,.14), transparent 32rem), var(--bg); color:var(--text); font-family:"Segoe UI","Microsoft YaHei UI",system-ui,sans-serif; line-height:1.7; }
+  .wrap { max-width:960px; margin:0 auto; padding:40px 20px 64px; }
+  .badge { display:inline-block; border:1px solid var(--border); background:var(--panel); color:var(--accent); border-radius:999px; padding:4px 12px; font-size:12px; }
+  h1 { font-size:30px; margin:18px 0 6px; }
+  .lead { color:var(--muted); max-width:680px; }
+  .grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:16px; margin-top:28px; }
+  .card { background:var(--panel); border:1px solid var(--border); border-radius:16px; padding:18px; box-shadow:0 24px 70px rgba(2,6,23,.45); }
+  .card h2 { font-size:15px; margin:0 0 6px; color:var(--accent); }
+  .card p { margin:0; color:var(--muted); font-size:13px; }
+  .step { display:flex; gap:12px; align-items:flex-start; }
+  .step .n { flex:0 0 26px; height:26px; display:grid; place-items:center; border-radius:8px; background:rgba(94,234,212,.12); color:var(--accent); font-weight:700; }
+  .bars { display:flex; align-items:flex-end; gap:10px; height:180px; padding:10px 4px 0; }
+  .bar { flex:1; background:linear-gradient(180deg,var(--accent2),var(--accent)); border-radius:8px 8px 0 0; position:relative; }
+  .bar span { position:absolute; top:-22px; left:50%; transform:translateX(-50%); font-size:11px; color:var(--muted); }
+  .note { margin-top:24px; border-left:3px solid var(--accent); background:var(--panel); border-radius:0 12px 12px 0; padding:14px 16px; color:var(--muted); font-size:13px; }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <span class="badge">进阶交付 · 合成数据 · 脱敏演示</span>
+    <h1>北京租房数据分析流水线</h1>
+    <p class="lead">把分散的房源信息整理成结构化数据，再输出均价、租金坪效与区域对比，用于选房决策与报告交付。以下数值均为虚构合成数据。</p>
+
+    <div class="grid">
+      <div class="card"><h2>样本量</h2><p>12,480 条合成房源</p></div>
+      <div class="card"><h2>整租均价</h2><p>¥6,820 / 月</p></div>
+      <div class="card"><h2>坪效中位数</h2><p>¥118 / m²·月</p></div>
+      <div class="card"><h2>覆盖区域</h2><p>16 个行政区</p></div>
+    </div>
+
+    <div class="card" style="margin-top:24px;">
+      <h2 style="color:var(--accent2);">区域均价对比（合成）</h2>
+      <div class="bars">
+        <div class="bar" style="height:46%"><span>丰台</span></div>
+        <div class="bar" style="height:58%"><span>朝阳</span></div>
+        <div class="bar" style="height:72%"><span>海淀</span></div>
+        <div class="bar" style="height:100%"><span>西城</span></div>
+        <div class="bar" style="height:88%"><span>东城</span></div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top:24px;">
+      <h2>流水线步骤</h2>
+      <div style="display:grid;gap:14px;margin-top:8px;">
+        <div class="step"><span class="n">1</span><p>在授权与公开范围内采集房源列表与详情字段，记录采集时间与来源。</p></div>
+        <div class="step"><span class="n">2</span><p>解析 PDF / HTML / 文本，抽取区域、户型、面积、价格、楼层等字段。</p></div>
+        <div class="step"><span class="n">3</span><p>去重、纠错、异常值检测，统一口径并生成结构化 CSV。</p></div>
+        <div class="step"><span class="n">4</span><p>用 Pyecharts 输出均价、坪效、区域排名与趋势图，打包成报告。</p></div>
+      </div>
+    </div>
+
+    <div class="note">说明：本页只展示“结果与流程”的模拟交付，不提供采集运行入口；真实项目按授权范围与脱敏规范单独交付。</div>
+  </div>
+</body>
+</html>

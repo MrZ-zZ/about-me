@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>AI 自动化工作流套件 · 演示</title>
+<style>
+:root {
+  color-scheme: dark;
+  --bg: #0f172a;
+  --panel: rgba(255, 255, 255, 0.06);
+  --border: rgba(255, 255, 255, 0.12);
+  --text: #e2e8f0;
+  --muted: #94a3b8;
+  --accent: #5eead4;
+  --accent2: #38bdf8;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: radial-gradient(circle at 20% 0%, rgba(94,234,212,0.10), transparent 30%), radial-gradient(circle at 80% 20%, rgba(56,189,248,0.10), transparent 32%), var(--bg); color: var(--text); font-family: "Segoe UI", "Microsoft YaHei", system-ui, sans-serif; min-height: 100vh; }
+.shell { max-width: 1180px; margin: 0 auto; padding: 32px 20px 56px; }
+header { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 20px; }
+.brand { display: flex; align-items: center; gap: 12px; }
+.logo { width: 44px; height: 44px; display: grid; place-items: center; border-radius: 14px; border: 1px solid var(--border); background: linear-gradient(135deg, rgba(94,234,212,0.18), rgba(56,189,248,0.18)); color: var(--accent); font-weight: 800; }
+h1 { font-size: 24px; margin: 0; }
+h2 { margin: 0 0 8px; font-size: 18px; }
+p { margin: 6px 0; color: var(--muted); line-height: 1.75; }
+.tag { font-size: 12px; color: var(--accent); letter-spacing: 0.08em; text-transform: uppercase; }
+.tabs { display: flex; flex-wrap: wrap; gap: 8px; margin: 24px 0 16px; }
+.tab { border: 1px solid var(--border); background: var(--panel); color: var(--muted); padding: 10px 16px; border-radius: 999px; cursor: pointer; transition: all .2s ease; }
+.tab.active { border-color: var(--accent); color: #042f2e; background: var(--accent); font-weight: 700; }
+.panel { border: 1px solid var(--border); background: var(--panel); border-radius: 20px; overflow: hidden; }
+iframe { width: 100%; height: 680px; border: 0; background: #fff; }
+.grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; }
+.card { border: 1px solid var(--border); background: rgba(255,255,255,0.04); border-radius: 16px; padding: 18px; }
+.card h3 { margin: 0 0 10px; font-size: 16px; color: var(--accent); }
+.meta { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; }
+.meta span { border: 1px solid var(--border); background: rgba(255,255,255,0.04); border-radius: 999px; padding: 3px 8px; font-size: 12px; color: var(--muted); }
+.search { width: 100%; padding: 12px 14px; border: 1px solid var(--border); border-radius: 12px; background: rgba(2,6,23,0.45); color: var(--text); font-size: 15px; outline: none; }
+.search:focus { border-color: var(--accent); }
+.steps { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; margin: 16px 0 14px; }
+.steps div { border: 1px solid var(--border); background: rgba(255,255,255,0.04); border-radius: 12px; padding: 12px; }
+.steps strong { display: block; color: var(--accent); font-size: 18px; }
+.steps span { display: block; margin-top: 6px; font-size: 12px; color: var(--muted); }
+@media (max-width: 640px) { .steps { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.kb-item { padding: 14px 16px; border-bottom: 1px solid var(--border); }
+.kb-item:last-child { border-bottom: 0; }
+.kb-item strong { color: var(--accent2); }
+@media (max-width: 640px) { header { flex-direction: column; align-items: flex-start; } iframe { height: 70vh; } }
+</style>
+</head>
+<body>
+<div class="shell">
+  <header>
+    <div class="brand">
+      <div class="logo">AI</div>
+      <div>
+        <h1>AI 自动化工作流套件</h1>
+        <p class="tag">批量数据运行 · AIGC 爆款复刻 · 知识库生成</p>
+      </div>
+    </div>
+    <p style="max-width:440px">合成演示数据，仅用于作品集展示；真实业务中只处理授权数据，默认脱敏、水印与边界说明。</p>
+  </header>
+
+  <div class="tabs" role="tablist" aria-label="工作流模块">
+    <button class="tab active" data-tab="batch">01 · 批量数据运行</button>
+    <button class="tab" data-tab="remix">02 · AIGC 爆款复刻</button>
+    <button class="tab" data-tab="kb">03 · 知识库生成</button>
+  </div>
+
+  <section id="panel-batch" class="panel">
+    <div style="padding:12px 16px;border-bottom:1px solid var(--border)">
+      <h2>批量数据运行</h2>
+      <p>把分散的表格 / 文本 / PDF 清洗后计算指标，并输出可交互图表与报告。下方为只读演示结果。</p>
+    </div>
+    <iframe src="../beijing-rent-pipeline/index.html" title="批量数据运行演示"></iframe>
+  </section>
+
+  <section id="panel-remix" class="panel" hidden>
+    <div style="padding:12px 16px;border-bottom:1px solid var(--border)">
+      <h2>AIGC 爆款复刻</h2>
+      <p>用自有或授权素材完成抽帧、转码、分镜编排与脱敏预览，不打包真实媒体文件。</p>
+    </div>
+    <iframe src="../aigc-video-remix/index.html" title="AIGC 爆款复刻演示"></iframe>
+  </section>
+
+  <section id="panel-kb" class="panel" hidden>
+    <div style="padding:16px">
+      <h2>知识库生成</h2>
+      <p>把已有数据文件（Markdown / CSV / TXT / 代码）清洗分块，生成可检索知识库。下方为生成后的检索结果。</p>
+      <div class="steps" aria-label="知识库生成流程">
+        <div><strong>1</strong><span>读取已有数据</span></div>
+        <div><strong>2</strong><span>清洗与分块</span></div>
+        <div><strong>3</strong><span>生成知识库</span></div>
+        <div><strong>4</strong><span>检索与输出</span></div>
+      </div>
+      <input id="kb-search" class="search" type="search" placeholder="搜索：比如 requests、Playwright、pandas、FFmpeg" />
+    </div>
+    <div id="kb-list"></div>
+  </section>
+</div>
+
+<script>
+const knowledge = [
+  { title: "requests 请求与重试", tags: ["Python", "requests", "采集"], text: "构造请求头、设置超时、解析响应状态码，并为网络波动加入重试和日志。" },
+  { title: "Playwright 浏览器自动化", tags: ["Python", "Playwright", "自动化"], text: "处理动态渲染页面，使用自动等待和选择器提取结构化内容。" },
+  { title: "pandas 数据清洗", tags: ["Python", "pandas", "清洗"], text: "读取 CSV / Excel，处理缺失值、重复行、类型转换和分组聚合。" },
+  { title: "FFmpeg 媒体处理", tags: ["FFmpeg", "视频", "转码"], text: "抽帧、提取音频、格式转换和批量归档，只处理自有或授权素材。" },
+  { title: "OpenAI 兼容接口", tags: ["AI", "LLM", "API"], text: "只发送汇总统计而非原始数据，支持本地规则降级，避免依赖外部服务。" },
+  { title: "脱敏与合规边界", tags: ["隐私", "合规", "交付"], text: "姓名、电话、身份证、银行卡、地址默认打码，敏感项目不提供运行入口。" }
+];
+function renderKb(q) {
+  const list = document.getElementById("kb-list");
+  const normalized = (q || "").trim().toLowerCase();
+  const rows = knowledge.filter((item) => !normalized || [item.title, item.tags.join(" "), item.text].join(" ").toLowerCase().includes(normalized));
+  list.innerHTML = rows.length
+    ? rows.map((item) => `<div class="kb-item"><strong>${item.title}</strong><p>${item.text}</p><div class="meta">${item.tags.map((tag) => `<span>${tag}</span>`).join("")}</div></div>`).join("")
+    : `<div class="kb-item"><strong>没有匹配结果</strong><p>换个关键词试试。</p></div>`;
+}
+const tabs = document.querySelectorAll(".tab");
+const panels = { batch: document.getElementById("panel-batch"), remix: document.getElementById("panel-remix"), kb: document.getElementById("panel-kb") };
+tabs.forEach((tab) => {
+  tab.addEventListener("click", () => {
+    tabs.forEach((item) => item.classList.remove("active"));
+    tab.classList.add("active");
+    Object.entries(panels).forEach(([key, panel]) => { panel.hidden = key !== tab.dataset.tab; });
+  });
+});
+document.getElementById("kb-search").addEventListener("input", (event) => renderKb(event.target.value));
+renderKb("");
+</script>
+</body>
+</html>

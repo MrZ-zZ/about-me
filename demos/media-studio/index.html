@@ -1,0 +1,192 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>子栖 · 个人媒体库</title>
+<style>
+:root {
+  --bg: #0b1120;
+  --panel: #111a2e;
+  --panel2: #0f172a;
+  --text: #f8fafc;
+  --muted: #a9b7cc;
+  --accent: #67e8f9;
+  --border: rgba(148, 163, 184, 0.22);
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  min-height: 100vh;
+  background:
+    radial-gradient(circle at 15% 10%, rgba(34, 211, 238, 0.12), transparent 28rem),
+    radial-gradient(circle at 85% 15%, rgba(168, 85, 247, 0.12), transparent 26rem),
+    var(--bg);
+  color: var(--text);
+  font-family: "Segoe UI", "Microsoft YaHei", system-ui, sans-serif;
+}
+.wrap { max-width: 1100px; margin: 0 auto; padding: 32px 20px 60px; }
+h1 { margin: 0 0 8px; font-size: 30px; }
+.sub { margin: 0; color: var(--muted); line-height: 1.7; }
+.panel { background: var(--panel); border: 1px solid var(--border); border-radius: 20px; padding: 18px; margin-top: 22px; }
+.controls { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
+button {
+  border: 0; border-radius: 12px; padding: 11px 16px;
+  background: var(--accent); color: #0b1120; font-weight: 600; cursor: pointer;
+}
+button.ghost { background: transparent; color: var(--text); border: 1px solid var(--border); }
+input[type=file] { color: var(--muted); }
+.player { margin-top: 18px; }
+video, audio { width: 100%; border-radius: 14px; background: #000; }
+.meta-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; margin-top: 16px; }
+.meta { background: var(--panel2); border: 1px solid var(--border); border-radius: 14px; padding: 12px; }
+.meta b { display: block; font-size: 12px; color: var(--muted); margin-bottom: 6px; }
+.meta span { font-size: 14px; overflow-wrap: anywhere; }
+.list { display: grid; gap: 10px; margin-top: 16px; }
+.item { display: flex; gap: 12px; align-items: center; padding: 12px; background: var(--panel2); border: 1px solid var(--border); border-radius: 14px; cursor: pointer; }
+.item:hover { border-color: var(--accent); }
+.item .thumb { width: 52px; height: 52px; border-radius: 10px; display: grid; place-items: center; background: linear-gradient(135deg, rgba(103,232,249,.3), rgba(168,85,247,.3)); font-size: 22px; }
+.item .info { min-width: 0; flex: 1; }
+.item .name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.item .kind { color: var(--muted); font-size: 12px; }
+.empty { padding: 36px; text-align: center; color: var(--muted); border: 1px dashed var(--border); border-radius: 20px; }
+.note { color: var(--muted); font-size: 13px; margin-top: 16px; line-height: 1.7; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>个人媒体库</h1>
+  <p class="sub">浏览器本地读取你的音频和视频，不上传服务器、不依赖在线播放。没有素材时，可用下方合成提示音做演示。</p>
+
+  <div class="panel">
+    <div class="controls">
+      <label>选择本地媒体</label>
+      <input id="fileInput" type="file" accept="audio/*,video/*" multiple />
+      <button id="synthBtn" class="ghost">播放合成提示音</button>
+      <button id="clearBtn" class="ghost">清空列表</button>
+    </div>
+  </div>
+
+  <div class="panel player">
+    <div id="mediaBox"><video id="video" controls hidden></video><audio id="audio" controls hidden></audio></div>
+    <div id="nowPlaying" class="sub">未选择媒体</div>
+    <div class="meta-grid" id="metaGrid"></div>
+  </div>
+
+  <div class="panel">
+    <h2 style="margin:0 0 4px;font-size:18px">媒体列表</h2>
+    <div class="list" id="list"></div>
+    <div class="empty" id="empty">还没有媒体文件。选择本地音频/视频后，这里会形成个人媒体库。</div>
+  </div>
+
+  <p class="note">说明：本 demo 只读取你主动选择的本地文件，不打包任何歌曲、视频或网络素材；后续可替换为你自己的媒体。</p>
+</div>
+
+<script>
+const fileInput = document.getElementById("fileInput");
+const list = document.getElementById("list");
+const empty = document.getElementById("empty");
+const audio = document.getElementById("audio");
+const video = document.getElementById("video");
+const nowPlaying = document.getElementById("nowPlaying");
+const metaGrid = document.getElementById("metaGrid");
+let items = [];
+
+function fmtSize(bytes) {
+  if (!bytes) return "-";
+  const units = ["B", "KB", "MB", "GB"];
+  let i = 0; let n = bytes;
+  while (n >= 1024 && i < units.length - 1) { n /= 1024; i += 1; }
+  return n.toFixed(i ? 1 : 0) + " " + units[i];
+}
+
+function render() {
+  list.innerHTML = "";
+  items.forEach((item, index) => {
+    const row = document.createElement("div");
+    row.className = "item";
+    const icon = document.createElement("div");
+    icon.className = "thumb";
+    icon.textContent = item.type === "video" ? "▶" : "♫";
+    const info = document.createElement("div");
+    info.className = "info";
+    const name = document.createElement("div");
+    name.className = "name";
+    name.textContent = item.name;
+    const kind = document.createElement("div");
+    kind.className = "kind";
+    kind.textContent = (item.type === "video" ? "视频" : "音频") + " · " + fmtSize(item.size) + (item.duration ? " · " + fmtDuration(item.duration) : "");
+    info.append(name, kind);
+    row.append(icon, info);
+    row.addEventListener("click", () => play(index));
+    list.appendChild(row);
+  });
+  empty.style.display = items.length ? "none" : "block";
+}
+
+function fmtDuration(seconds) {
+  const m = Math.floor(seconds / 60);
+  const s = Math.floor(seconds % 60).toString().padStart(2, "0");
+  return m + ":" + s;
+}
+
+function play(index) {
+  const item = items[index];
+  video.hidden = item.type !== "video";
+  audio.hidden = item.type !== "audio";
+  if (item.type === "video") {
+    video.src = item.url;
+    video.play().catch(() => {});
+  } else {
+    audio.src = item.url;
+    audio.play().catch(() => {});
+  }
+  nowPlaying.textContent = "正在播放：" + item.name;
+  metaGrid.innerHTML = [
+    ["文件名", item.name],
+    ["类型", item.type === "video" ? "视频" : "音频"],
+    ["大小", fmtSize(item.size)],
+    ["MIME", item.mime],
+    ["时长", item.duration ? fmtDuration(item.duration) : "-"]
+  ].map(([k, v]) => '<div class="meta"><b>' + k + '</b><span>' + String(v).replace(/</g, "&lt;") + '</span></div>').join("");
+}
+
+function addFiles(fileList) {
+  Array.from(fileList).forEach((file) => {
+    if (!file.type.startsWith("audio/") && !file.type.startsWith("video/")) return;
+    const url = URL.createObjectURL(file);
+    const item = { name: file.name, type: file.type.startsWith("video/") ? "video" : "audio", mime: file.type, size: file.size, duration: 0, url };
+    items.push(item);
+    const probe = document.createElement(item.type);
+    probe.preload = "metadata";
+    probe.onloadedmetadata = () => { item.duration = probe.duration; render(); };
+    probe.src = url;
+  });
+  render();
+}
+
+function synthTone() {
+  const Ctx = window.AudioContext || window.webkitAudioContext;
+  const ctx = new Ctx();
+  const now = ctx.currentTime;
+  [523.25, 659.25, 783.99].forEach((freq, i) => {
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = "sine";
+    osc.frequency.value = freq;
+    gain.gain.setValueAtTime(0.0001, now + i * 0.18);
+    gain.gain.exponentialRampToValueAtTime(0.18, now + i * 0.18 + 0.02);
+    gain.gain.exponentialRampToValueAtTime(0.0001, now + i * 0.18 + 0.16);
+    osc.connect(gain).connect(ctx.destination);
+    osc.start(now + i * 0.18);
+    osc.stop(now + i * 0.18 + 0.17);
+  });
+}
+
+fileInput.addEventListener("change", (e) => addFiles(e.target.files));
+document.getElementById("synthBtn").addEventListener("click", synthTone);
+document.getElementById("clearBtn").addEventListener("click", () => { items.forEach((x) => URL.revokeObjectURL(x.url)); items = []; render(); nowPlaying.textContent = "未选择媒体"; metaGrid.innerHTML = ""; });
+render();
+</script>
+</body>
+</html>

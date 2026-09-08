@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+<defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#070817"/><stop offset=".5" stop-color="#2a2d62"/><stop offset="1" stop-color="#6d8bff"/></linearGradient><linearGradient id="ring" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ffe7a7"/><stop offset="1" stop-color="#8ed8ff"/></linearGradient></defs>
+<rect width="1200" height="630" fill="url(#g)"/>
+<circle cx="600" cy="315" r="230" fill="none" stroke="rgba(255,235,176,.35)" stroke-width="3"/>
+<circle cx="600" cy="315" r="160" fill="none" stroke="url(#ring)" stroke-width="4" stroke-dasharray="12 9"/>
+<circle cx="600" cy="315" r="110" fill="#111a2e" stroke="rgba(255,235,181,.5)" stroke-width="3"/>
+<path d="M600 225 L620 295 L690 315 L620 335 L600 405 L580 335 L510 315 L580 295 Z" fill="#ffd66b" opacity=".9"/>
+<text x="600" y="530" text-anchor="middle" font-family="Microsoft YaHei, sans-serif" font-size="52" fill="#f8fafc" font-weight="700">星座运势罗盘</text>
+</svg>

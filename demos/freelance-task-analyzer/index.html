@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>子栖 · 接单任务筛选分析器</title>
+<style>
+:root{--bg:#050816;--panel:rgba(10,19,42,.82);--panel2:rgba(16,30,61,.78);--line:rgba(73,225,255,.2);--cyan:#49e1ff;--blue:#588cff;--purple:#9b6cff;--green:#4df2a3;--yellow:#ffd166;--red:#ff6688;--text:#e9f7ff;--muted:#91a8c2}
+*{box-sizing:border-box}
+html,body{margin:0;min-height:100%}
+body{font-family:"Microsoft YaHei","PingFang SC",system-ui,sans-serif;color:var(--text);background:radial-gradient(circle at 12% 18%,rgba(56,143,255,.18),transparent 28%),radial-gradient(circle at 86% 8%,rgba(155,108,255,.17),transparent 25%),linear-gradient(135deg,#050816,#07132b 55%,#060a1b);overflow-x:hidden}
+body::before{content:"";position:fixed;inset:0;pointer-events:none;opacity:.18;background-image:linear-gradient(rgba(73,225,255,.08) 1px,transparent 1px),linear-gradient(90deg,rgba(73,225,255,.08) 1px,transparent 1px);background-size:42px 42px;mask-image:linear-gradient(to bottom,black,transparent 90%)}
+body::after{content:"";position:fixed;inset:0;pointer-events:none;background:repeating-linear-gradient(0deg,rgba(255,255,255,.018) 0,rgba(255,255,255,.018) 1px,transparent 1px,transparent 4px)}
+.wrap{position:relative;z-index:2;width:min(1280px,calc(100% - 28px));margin:0 auto;padding:26px 0 48px}
+.topbar{display:flex;justify-content:space-between;align-items:center;gap:16px;margin-bottom:18px}
+.brand{display:flex;align-items:center;gap:12px}
+.mark{width:44px;height:44px;display:grid;place-items:center;color:var(--cyan);border:1px solid var(--cyan);background:rgba(73,225,255,.08);box-shadow:0 0 22px rgba(73,225,255,.3),inset 0 0 18px rgba(73,225,255,.12);clip-path:polygon(18% 0,82% 0,100% 18%,100% 82%,82% 100%,18% 100%,0 82%,0 18%);font-weight:900}
+.brand b{display:block;font-size:16px;letter-spacing:1px}
+.brand small{display:block;margin-top:3px;color:var(--muted);font-size:11px;letter-spacing:2px}
+.status{display:flex;align-items:center;gap:8px;color:var(--green);font-size:12px}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--green);box-shadow:0 0 13px var(--green);animation:pulse 1.5s infinite}
+@keyframes pulse{50%{opacity:.35;transform:scale(.7)}}
+.hero{position:relative;overflow:hidden;border:1px solid var(--line);border-radius:28px;padding:clamp(20px,4vw,38px);background:linear-gradient(145deg,rgba(12,26,57,.9),rgba(5,11,29,.84));box-shadow:0 0 70px rgba(0,0,0,.4)}
+.hero h1{margin:0 0 10px;font-size:clamp(28px,5vw,52px);letter-spacing:-1px;background:linear-gradient(90deg,var(--cyan),var(--blue),var(--purple));-webkit-background-clip:text;background-clip:text;color:transparent}
+.hero p{margin:0;max-width:820px;color:var(--muted);line-height:1.8}
+.toolbar{display:grid;grid-template-columns:1.2fr 150px 190px auto;gap:10px;margin:22px 0 14px}
+input,select{width:100%;border:1px solid var(--line);border-radius:14px;background:var(--panel2);color:var(--text);padding:12px 14px;font:inherit;outline:none}
+input:focus,select:focus{border-color:var(--cyan)}
+button{border:1px solid var(--line);border-radius:12px;padding:11px 15px;background:var(--panel2);color:var(--text);cursor:pointer;font:inherit}
+button:hover{border-color:var(--cyan)}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin:18px 0}
+.stat{position:relative;overflow:hidden;min-height:120px;border:1px solid var(--line);border-radius:20px;padding:20px;background:linear-gradient(145deg,rgba(73,225,255,.08),rgba(155,108,255,.07))}
+.stat::before{content:"";position:absolute;top:0;left:0;width:100%;height:2px;background:linear-gradient(90deg,transparent,var(--cyan),transparent)}
+.stat small{display:block;color:var(--muted);font-size:12px;margin-bottom:10px}
+.stat b{font-size:32px;color:var(--cyan)}
+.stat.alt b{color:var(--purple)}
+.stat.good b{color:var(--green)}
+.task-list{display:grid;gap:12px}
+.task{position:relative;overflow:hidden;border:1px solid var(--line);border-radius:18px;padding:18px;background:var(--panel);transition:border-color .2s,transform .2s,box-shadow .2s}
+.task:hover{border-color:var(--cyan);transform:translateY(-2px);box-shadow:0 14px 40px rgba(0,0,0,.28)}
+.task-head{display:flex;justify-content:space-between;gap:14px;align-items:flex-start}
+.task-title{font-size:17px;font-weight:800}
+.price{font-size:22px;font-weight:900;color:var(--yellow);white-space:nowrap}
+.tags{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.tag{background:rgba(73,225,255,.11);color:var(--cyan);border-radius:8px;padding:4px 8px;font-size:12px}
+.risk-line{margin-top:14px;display:flex;justify-content:space-between;gap:12px;font-size:13px}
+.priority-track{height:7px;border-radius:99px;background:#0a1830;overflow:hidden;margin-top:8px}
+.priority-track i{display:block;height:100%;background:linear-gradient(90deg,var(--green),var(--cyan),var(--purple));border-radius:99px}
+.low{color:var(--green)}.mid{color:var(--yellow)}.high{color:var(--red)}
+.note{margin-top:22px;padding:14px 16px;border-left:3px solid var(--cyan);background:rgba(73,225,255,.05);color:var(--muted);line-height:1.7;font-size:13px}
+@media(max-width:760px){.toolbar{grid-template-columns:1fr}.stats{grid-template-columns:1fr}.task-head{flex-direction:column}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="topbar">
+    <div class="brand"><div class="mark">FT</div><div><b>接单任务筛选分析器</b><small>本地规则 · 合成数据 · 合规提醒</small></div></div>
+    <div class="status"><span class="dot"></span>LOCAL ANALYSIS READY</div>
+  </header>
+
+  <section class="hero">
+    <h1>程序员私活接单筛选</h1>
+    <p>用预算、技能、风险词和优先级快速筛选接单机会。页面只使用合成任务，不采集真实平台信息，不展示真实客户。</p>
+    <div class="toolbar">
+      <input id="keyword" placeholder="关键词，如 Python / 数据 / 报表" />
+      <input id="minBudget" type="number" value="0" min="0" placeholder="最低预算" />
+      <select id="sortBy">
+        <option value="priority">按优先级</option>
+        <option value="budget">按预算</option>
+        <option value="risk">按风险</option>
+      </select>
+      <button id="resetBtn">重置筛选</button>
+    </div>
+    <div class="stats">
+      <div class="stat"><small>当前匹配任务</small><b id="statTotal">0</b></div>
+      <div class="stat good"><small>低风险任务</small><b id="statSafe">0</b></div>
+      <div class="stat alt"><small>预算区间</small><b id="statRange">¥0</b></div>
+    </div>
+  </section>
+
+  <button id="exportBtn" style="margin-top:14px">导出筛选报告</button>
+  <div class="task-list" id="list"></div>
+  <div class="note">风险词仅用于提醒合规边界；公开作品只展示合成任务，不包含真实客户、联系方式或平台信息。</div>
+</div>
+
+<script>
+const riskWords=["爬取","绕过","逆向","验证码","账号","代刷","批量注册","灰色","擦边"];
+const tasks=[
+  {title:"Python 数据清洗脚本",budget:800,skills:["Python","pandas"],risk:1},
+  {title:"Excel 批量合并小工具",budget:500,skills:["Python","openpyxl"],risk:1},
+  {title:"电商经营报表可视化",budget:1800,skills:["Python","ECharts","数据分析"],risk:2},
+  {title:"本地相册网页生成",budget:600,skills:["Python","HTML"],risk:1},
+  {title:"通用接口签名学习演示",budget:1200,skills:["Python","hashlib","逆向"],risk:3},
+  {title:"考研数据清洗与择校分析",budget:1500,skills:["Python","数据清洗","可视化"],risk:2},
+  {title:"招聘数据字段标准化",budget:900,skills:["Python","CSV","正则"],risk:1},
+  {title:"浏览器自动化流程演示",budget:1300,skills:["Python","自动化"],risk:2}
+];
+function riskMeta(r){return r===1?{label:"低风险",cls:"low"}:r===2?{label:"需确认边界",cls:"mid"}:{label:"高合规门槛",cls:"high"};}
+function matchedRiskWords(t){return riskWords.filter(w=>(t.title+" "+t.skills.join(" ")).toLowerCase().includes(w.toLowerCase()));}
+function priority(t,kw){let score=t.budget/100;const hits=kw?t.skills.filter(s=>s.toLowerCase().includes(kw)).length:0;score+=hits*25;score-=t.risk*12;score-=matchedRiskWords(t).length*8;return Math.round(score*10)/10;}
+function currentList(){
+  const kw=document.getElementById("keyword").value.trim().toLowerCase();
+  const min=Number(document.getElementById("minBudget").value)||0;
+  const sort=document.getElementById("sortBy").value;
+  const list=tasks.filter(t=>t.budget>=min && (!kw || t.title.toLowerCase().includes(kw) || t.skills.join(" ").toLowerCase().includes(kw)))
+    .map(t=>({...t,riskMeta:riskMeta(t.risk),riskWords:matchedRiskWords(t),priority:priority(t,kw)}));
+  list.sort((a,b)=>sort==="budget"?b.budget-a.budget:sort==="risk"?a.risk-b.risk:b.priority-a.priority||b.budget-a.budget);
+  return list;
+}
+function render(){
+  const list=currentList();
+  document.getElementById("statTotal").textContent=list.length;
+  document.getElementById("statSafe").textContent=list.filter(t=>t.risk===1).length;
+  const budgets=list.map(t=>t.budget);
+  document.getElementById("statRange").textContent=list.length?("¥"+Math.min(...budgets)+"–¥"+Math.max(...budgets)):"¥0";
+  const maxPrio=Math.max(1,...list.map(t=>t.priority));
+  document.getElementById("list").innerHTML=list.map(t=>{
+    const risk=t.riskMeta;
+    return '<article class="task"><div class="task-head"><div><div class="task-title">'+t.title+'</div><div class="tags">'+t.skills.map(s=>'<span class="tag">'+s+'</span>').join("")+'</div></div><div class="price">¥'+t.budget+'</div></div>'+
+      '<div class="risk-line"><span class="'+risk.cls+'">'+risk.label+'</span><span style="color:var(--muted)">优先级 '+t.priority+'</span><span style="color:var(--muted)">'+(t.riskWords.length?("命中："+t.riskWords.join("、")):"未命中风险词")+'</span></div>'+
+      '<div class="priority-track"><i style="width:'+Math.max(8,t.priority/maxPrio*100)+'%"></i></div></article>';
+  }).join("") || '<p style="color:var(--muted)">没有匹配的合成任务。</p>';
+}
+function exportReport(){
+  const list=currentList();
+  const md="# 接单任务筛选报告\n\n> 合成演示数据，不包含真实平台任务\n\n"+list.map(t=>{const risk=t.riskMeta;return "- "+t.title+" · 预算 ¥"+t.budget+" · 优先级 "+t.priority+" · "+risk.label+(t.riskWords.length?(" · 风险词："+t.riskWords.join("、")):"");}).join("\n");
+  const blob=new Blob([md],{type:"text/plain;charset=utf-8"});const url=URL.createObjectURL(blob);const a=document.createElement("a");a.href=url;a.download="task_analysis.md";a.click();URL.revokeObjectURL(url);
+}
+["keyword","minBudget","sortBy"].forEach(id=>document.getElementById(id).addEventListener("input",render));
+document.getElementById("resetBtn").addEventListener("click",()=>{document.getElementById("keyword").value="";document.getElementById("minBudget").value="0";document.getElementById("sortBy").value="priority";render();});
+document.getElementById("exportBtn").addEventListener("click",exportReport);
+render();
+</script>
+</body>
+</html>

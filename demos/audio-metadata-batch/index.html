@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>子栖 · 音乐元数据批处理</title>
+<style>
+:root{--bg:#0b1120;--panel:rgba(17,26,46,.85);--panel2:#0f172a;--text:#f8fafc;--muted:#a9b7cc;--accent:#67e8f9;--violet:#c4b5fd;--green:#6ee7b7;--border:rgba(148,163,184,.22)}
+*{box-sizing:border-box}
+body{margin:0;min-height:100vh;color:var(--text);background:radial-gradient(circle at 15% 10%,rgba(34,211,238,.14),transparent 28rem),radial-gradient(circle at 85% 15%,rgba(168,85,247,.16),transparent 26rem),var(--bg);font-family:"Segoe UI","Microsoft YaHei",system-ui,sans-serif}
+.wrap{max-width:1120px;margin:0 auto;padding:36px 20px 64px}
+.badge{display:inline-flex;align-items:center;gap:8px;padding:8px 14px;border:1px solid rgba(103,232,249,.45);border-radius:999px;background:rgba(103,232,249,.08);color:#7deffd;font-size:13px}
+h1{margin:12px 0 8px;font-size:34px}
+.sub{margin:0;color:var(--muted);line-height:1.85}
+.panel{background:var(--panel);border:1px solid var(--border);border-radius:22px;padding:20px;margin-top:22px;box-shadow:0 24px 70px rgba(2,6,23,.45);backdrop-filter:blur(12px)}
+.panel-head{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:14px}
+.panel-title{font-weight:700;color:#cfe9ff}
+.dropzone{border:1.5px dashed rgba(103,232,249,.35);border-radius:18px;padding:22px;text-align:center;color:var(--muted);cursor:pointer;transition:.25s}
+.dropzone:hover,.dropzone.drag{border-color:var(--accent);background:rgba(103,232,249,.06);color:#e6f9ff}
+.dropzone strong{color:#7deffd}
+.actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:14px}
+button{border:0;border-radius:12px;padding:11px 16px;background:var(--accent);color:#0b1120;font-weight:700;cursor:pointer}
+button.ghost{background:transparent;color:var(--text);border:1px solid var(--border)}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-top:16px}
+.stat{background:var(--panel2);border:1px solid var(--border);border-radius:16px;padding:14px}
+.stat b{display:block;font-size:22px;color:#7deffd}
+.stat span{color:var(--muted);font-size:12px}
+.toolbar{display:flex;flex-wrap:wrap;gap:12px;align-items:center;margin-bottom:14px}
+.toolbar input{flex:1;min-width:220px;background:#0a111f;border:1px solid var(--border);border-radius:11px;color:var(--text);padding:10px 12px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:14px}
+.item{background:var(--panel2);border:1px solid var(--border);border-radius:18px;padding:16px;animation:fade .4s both}
+.item:hover{border-color:var(--accent);transform:translateY(-2px);transition:.2s}
+.item b{color:#fff}
+.item .meta{color:var(--muted);font-size:12px;margin:5px 0}
+.item input{margin:6px 4px 0 0;background:#0a111f;border:1px solid var(--border);color:var(--text);border-radius:8px;padding:6px 8px;font-size:12px}
+canvas{width:100%;height:46px;margin-top:12px;display:block}
+@keyframes fade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.note{margin-top:20px;color:var(--muted);font-size:13px;line-height:1.7;border-left:3px solid var(--accent);padding-left:12px}
+.toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%) translateY(20px);background:#0f766e;border:1px solid #2dd4bf;color:#eafffb;padding:12px 18px;border-radius:999px;opacity:0;pointer-events:none;transition:.25s}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <span class="badge">Python 思路 · 本地元数据处理</span>
+  <h1>音乐元数据批处理</h1>
+  <p class="sub">读取本地音频名称、类型、大小和时长，绘制合成波形，编辑标签并导出清单；不打包任何歌曲、封面或歌词。</p>
+  <section class="panel">
+    <div class="panel-head"><span class="panel-title">导入音频</span><span class="muted">浏览器本地读取</span></div>
+    <div class="dropzone" id="dropzone"><strong>拖入音频文件</strong><br>或点击选择本地音频<input id="fileInput" type="file" accept="audio/*" multiple hidden /></div>
+    <div class="actions">
+      <button id="sampleBtn">载入合成示例</button>
+      <button class="ghost" id="exportJson">导出 JSON</button>
+      <button class="ghost" id="exportCsv">导出 CSV</button>
+      <button class="ghost" id="clearBtn">清空</button>
+    </div>
+    <div class="stats">
+      <div class="stat"><b id="stCount">0</b><span>音频条目</span></div>
+      <div class="stat"><b id="stSize">0 B</b><span>总大小</span></div>
+      <div class="stat"><b id="stDur">00:00</b><span>总时长</span></div>
+      <div class="stat"><b id="stPlay">0</b><span>可播放文件</span></div>
+    </div>
+  </section>
+  <section class="panel">
+    <div class="panel-head"><span class="panel-title">媒体清单</span><span id="filterCount" class="muted"></span></div>
+    <div class="toolbar"><input id="filter" placeholder="按标题、艺术家或专辑筛选" /></div>
+    <div class="grid" id="list"></div>
+  </section>
+  <div class="note">合成示例由浏览器 Web Audio 生成，仅作为演示；真实文件不会离开本机。</div>
+</div>
+<div class="toast" id="toast"></div>
+<script>
+let items=[],audioCtx=null,activeTone=null;
+const $=id=>document.getElementById(id);
+const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+function toast(msg){const t=$("toast");t.textContent=msg;t.classList.add("show");setTimeout(()=>t.classList.remove("show"),1800);}
+function fmtSize(b){if(!b&&b!==0)return "-";const u=["B","KB","MB","GB"];let n=b,i=0;while(n>=1024&&i<u.length-1){n/=1024;i++;}return n.toFixed(i?1:0)+" "+u[i];}
+function fmtDur(s){if(!s)return "-";const m=Math.floor(s/60),x=Math.floor(s%60).toString().padStart(2,"0");return m+":"+x;}
+function drawWave(canvas,seed){const ctx=canvas.getContext("2d");const w=canvas.width=canvas.clientWidth*2,h=canvas.height=92;ctx.clearRect(0,0,w,h);const bars=64;for(let i=0;i<bars;i++){const v=.16+Math.abs(Math.sin(i*7.13+seed*3.7))*.76;ctx.fillStyle=i%2?"rgba(103,232,249,.75)":"rgba(196,181,253,.75)";ctx.fillRect(i*(w/bars)+2,h/2-(h/2)*v,Math.max(2,w/bars-4),h*v);}}
+function render(){const kw=$("filter").value.trim().toLowerCase();const filtered=items.filter(x=>!kw||[x.title,x.artist,x.album].some(v=>(v||"").toLowerCase().includes(kw)));$("filterCount").textContent=filtered.length+" / "+items.length;$("list").innerHTML=filtered.map((x,i)=>{const idx=items.indexOf(x);return '<div class="item"><b>'+esc(x.title)+'</b><div class="meta">类型：'+esc(x.type||"合成音频")+' · 大小：'+fmtSize(x.size)+' · 时长：'+fmtDur(x.duration)+'</div><input value="'+esc(x.artist||"")+'" placeholder="艺术家" data-i="'+idx+'" data-k="artist"><input value="'+esc(x.album||"")+'" placeholder="专辑" data-i="'+idx+'" data-k="album"><canvas data-i="'+idx+'"></canvas></div>';}).join("")||'<p class="muted" style="grid-column:1/-1">暂无音频，请导入或载入合成示例。</p>';filtered.forEach(x=>{const idx=items.indexOf(x);const c=document.querySelector('canvas[data-i="'+idx+'"]');if(c)drawWave(c,x.seed||1);});document.querySelectorAll('.item input').forEach(inp=>inp.addEventListener('change',()=>{const x=items[+inp.dataset.i];if(x){x[inp.dataset.k]=inp.value.trim();render();}}));$("stCount").textContent=items.length;$("stSize").textContent=fmtSize(items.reduce((s,x)=>s+(x.size||0),0));$("stDur").textContent=fmtDur(items.reduce((s,x)=>s+(x.duration||0),0));$("stPlay").textContent=items.filter(x=>x.url).length;}
+function addFile(file){if(!file.type.startsWith("audio/"))return;const item={title:file.name.replace(/\.[^.]+$/,""),type:file.type,size:file.size,duration:0,artist:"",album:"",url:URL.createObjectURL(file),seed:Math.random()};items.push(item);const a=document.createElement("audio");a.preload="metadata";a.onloadedmetadata=()=>{item.duration=a.duration;item.play=()=>{a.currentTime=0;a.play();};render();};a.src=item.url;render();}
+function stopTone(){if(activeTone){try{activeTone.stop();}catch(e){}activeTone=null;}}
+function playTone(item){stopTone();if(item.url){const a=new Audio(item.url);a.play();return;}if(!audioCtx)audioCtx=new (window.AudioContext||window.webkitAudioContext)();const o=audioCtx.createOscillator(),g=audioCtx.createGain();o.type="sine";o.frequency.value=220+item.seed*330;g.gain.value=.08;o.connect(g);g.connect(audioCtx.destination);o.start();activeTone=o;setTimeout(stopTone,item.duration*1000||800);}
+function addSamples(){const specs=[["子栖 · 晨光数据",172,"本地合成"],["子栖 · 夜航代码",218,"本地合成"],["子栖 · 药学笔记",146,"本地合成"]];specs.forEach(([title,dur,album])=>{const item={title,duration:dur,type:"audio/wav",size:dur*31000,artist:"子栖",album,url:null,seed:Math.random()};item.play=()=>playTone(item);items.push(item);});render();toast("已载入 3 个合成示例音频");}
+$("dropzone").addEventListener("click",()=>$("fileInput").click());
+$("dropzone").addEventListener("dragover",e=>{e.preventDefault();$("dropzone").classList.add("drag");});
+$("dropzone").addEventListener("dragleave",()=>$("dropzone").classList.remove("drag"));
+$("dropzone").addEventListener("drop",e=>{e.preventDefault();$("dropzone").classList.remove("drag");Array.from(e.dataTransfer.files).forEach(addFile);});
+$("fileInput").addEventListener("change",e=>Array.from(e.target.files).forEach(addFile));
+$("sampleBtn").addEventListener("click",addSamples);
+$("clearBtn").addEventListener("click",()=>{stopTone();items.forEach(x=>x.url&&URL.revokeObjectURL(x.url));items=[];render();toast("已清空");});
+$("filter").addEventListener("input",render);
+$("exportJson").addEventListener("click",()=>{const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([JSON.stringify(items.map(({url,play,seed,...x})=>x),null,2)],{type:"application/json"}));a.download="audio-metadata.json";a.click();});
+$("exportCsv").addEventListener("click",()=>{const rows=[["title","artist","album","type","size","duration"]].concat(items.map(x=>[x.title,x.artist,x.album,x.type,x.size,x.duration]));const csv=rows.map(r=>r.map(c=>'"'+String(c??"").replace(/"/g,'""')+'"').join(",")).join("\n");const a=document.createElement("a");a.href=URL.createObjectURL(new Blob(["\ufeff"+csv],{type:"text/csv;charset=utf-8"}));a.download="audio-metadata.csv";a.click();});
+document.addEventListener("click",e=>{const card=e.target.closest(".item");if(!card)return;if(e.target.tagName!=="CANVAS")return;const idx=+e.target.dataset.i;const x=items[idx];if(x&&x.play)x.play();});
+render();
+</script>
+</body>
+</html>

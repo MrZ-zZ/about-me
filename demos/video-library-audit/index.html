@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>子栖 · 视频清单审计工具</title>
+<style>
+:root{--bg:#0b1120;--panel:rgba(17,26,46,.85);--panel2:#0f172a;--text:#f8fafc;--muted:#a9b7cc;--accent:#67e8f9;--warn:#fbbf24;--green:#6ee7b7;--border:rgba(148,163,184,.22)}
+*{box-sizing:border-box}
+body{margin:0;min-height:100vh;color:var(--text);background:radial-gradient(circle at 15% 10%,rgba(34,211,238,.14),transparent 28rem),radial-gradient(circle at 85% 15%,rgba(168,85,247,.15),transparent 26rem),var(--bg);font-family:"Segoe UI","Microsoft YaHei",system-ui,sans-serif}
+.wrap{max-width:1160px;margin:0 auto;padding:36px 20px 64px}
+.badge{display:inline-flex;align-items:center;gap:8px;padding:8px 14px;border:1px solid rgba(103,232,249,.45);border-radius:999px;background:rgba(103,232,249,.08);color:#7deffd;font-size:13px}
+h1{margin:12px 0 8px;font-size:34px}
+.sub{margin:0;color:var(--muted);line-height:1.85}
+.panel{background:var(--panel);border:1px solid var(--border);border-radius:22px;padding:20px;margin-top:22px;box-shadow:0 24px 70px rgba(2,6,23,.45);backdrop-filter:blur(12px)}
+.panel-head{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:14px}
+.panel-title{font-weight:700;color:#cfe9ff}
+.dropzone{border:1.5px dashed rgba(103,232,249,.35);border-radius:18px;padding:22px;text-align:center;color:var(--muted);cursor:pointer;transition:.25s}
+.dropzone:hover,.dropzone.drag{border-color:var(--accent);background:rgba(103,232,249,.06);color:#e6f9ff}
+.actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:14px}
+button{border:0;border-radius:12px;padding:11px 16px;background:var(--accent);color:#0b1120;font-weight:700;cursor:pointer}
+button.ghost{background:transparent;color:var(--text);border:1px solid var(--border)}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-top:16px}
+.stat{background:var(--panel2);border:1px solid var(--border);border-radius:16px;padding:14px}
+.stat b{display:block;font-size:22px;color:#7deffd}
+.stat span{color:var(--muted);font-size:12px}
+.toolbar{display:flex;flex-wrap:wrap;gap:12px;align-items:center;margin-bottom:14px}
+.toolbar input{flex:1;min-width:220px;background:#0a111f;border:1px solid var(--border);border-radius:11px;color:var(--text);padding:10px 12px}
+.player{display:none;background:#000;border:1px solid var(--border);border-radius:16px;padding:10px;margin-bottom:16px}
+.player video{width:100%;max-height:340px;border-radius:10px;display:block}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px}
+.item{background:var(--panel2);border:1px solid var(--border);border-radius:18px;padding:16px;animation:fade .4s both}
+.item:hover{border-color:var(--accent);transform:translateY(-2px);transition:.2s}
+.item .thumb{height:120px;border-radius:12px;background:linear-gradient(135deg,rgba(34,211,238,.15),rgba(168,85,247,.15));display:grid;place-items:center;color:#67e8f9;font-size:12px;border:1px solid var(--border)}
+.item b{display:block;margin:10px 0 5px;color:#fff}
+.item p{margin:4px 0;color:var(--muted);font-size:12px}
+.tag{display:inline-block;margin:4px 4px 0 0;padding:3px 7px;border-radius:8px;font-size:11px;background:rgba(103,232,249,.08);border:1px solid rgba(103,232,249,.25);color:#7deffd}
+.tag.warn{background:rgba(251,191,36,.08);border-color:rgba(251,191,36,.3);color:#fde68a}
+.tag.green{background:rgba(110,231,183,.08);border-color:rgba(110,231,183,.28);color:#86efac}
+.note{margin-top:20px;color:var(--muted);font-size:13px;line-height:1.7;border-left:3px solid var(--accent);padding-left:12px}
+.toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%) translateY(20px);background:#0f766e;border:1px solid #2dd4bf;color:#eafffb;padding:12px 18px;border-radius:999px;opacity:0;pointer-events:none;transition:.25s}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <span class="badge">Python 思路 · 本地视频审计</span>
+  <h1>视频清单审计工具</h1>
+  <p class="sub">读取本地视频文件或载入合成清单，识别分辨率、大小、时长与疑似重复项；不包含视频或平台数据。</p>
+  <section class="panel">
+    <div class="panel-head"><span class="panel-title">导入视频</span><span class="muted">本地读取</span></div>
+    <div class="dropzone" id="dropzone"><strong>拖入视频文件</strong><br>或点击选择本地视频<input id="fileInput" type="file" accept="video/*" multiple hidden /></div>
+    <div class="actions">
+      <button id="sampleBtn">载入合成清单</button>
+      <button class="ghost" id="exportJson">导出 JSON</button>
+      <button class="ghost" id="exportCsv">导出 CSV</button>
+      <button class="ghost" id="clearBtn">清空</button>
+    </div>
+    <div class="stats">
+      <div class="stat"><b id="stCount">0</b><span>视频条目</span></div>
+      <div class="stat"><b id="stSize">0 B</b><span>总大小</span></div>
+      <div class="stat"><b id="stDup">0</b><span>疑似重复</span></div>
+      <div class="stat"><b id="stHd">0</b><span>高清及以上</span></div>
+    </div>
+  </section>
+  <section class="panel">
+    <div class="panel-head"><span class="panel-title">审计清单</span><span id="filterCount" class="muted"></span></div>
+    <div class="player" id="playerWrap"><video id="player" controls></video></div>
+    <div class="toolbar"><input id="filter" placeholder="按文件名、格式、分辨率筛选" /></div>
+    <div class="grid" id="list"></div>
+  </section>
+  <div class="note">演示清单为合成文件名和虚构参数，仅用于展示审计逻辑。</div>
+</div>
+<div class="toast" id="toast"></div>
+<script>
+let items=[];
+const $=id=>document.getElementById(id);
+const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+function toast(msg){const t=$("toast");t.textContent=msg;t.classList.add("show");setTimeout(()=>t.classList.remove("show"),1800);}
+function fmtSize(b){if(!b&&b!==0)return "-";const u=["B","KB","MB","GB"];let n=b,i=0;while(n>=1024&&i<u.length-1){n/=1024;i++;}return n.toFixed(i?1:0)+" "+u[i];}
+function fmtDur(s){if(!s)return "-";const m=Math.floor(s/60),x=Math.floor(s%60).toString().padStart(2,"0");return m+":"+x;}
+function resolution(w,h){if(!w||!h)return "未知";return w+"×"+h;}
+function quality(w,h){if(!w||!h)return "未知";if(w>=3840)return "4K";if(w>=1920)return "1080P";if(w>=1280)return "720P";return "标清";}
+function render(){const kw=$("filter").value.trim().toLowerCase();const seen=new Map();let dup=0;items.forEach(x=>{const k=(x.name||"")+":"+(x.size||0);if(seen.has(k)){x.duplicate=true;dup++;}else{seen.set(k,x);x.duplicate=false;}});const filtered=items.filter(x=>!kw||[x.name,x.format,x.res,x.quality].some(v=>(v||"").toLowerCase().includes(kw)));$("filterCount").textContent=filtered.length+" / "+items.length;$("list").innerHTML=filtered.map((x,i)=>'<div class="item"><div class="thumb">'+esc(x.res||"视频占位")+'</div><b>'+esc(x.name)+'</b><p>格式：'+esc(x.format||"-")+' · 大小：'+fmtSize(x.size)+'</p><p>分辨率：'+esc(x.res||"-")+' · 时长：'+fmtDur(x.duration)+'</p><div><span class="tag">'+esc(x.quality)+'</span>'+(x.duplicate?'<span class="tag warn">疑似重复</span>':'')+(x.url?'<span class="tag green">可播放</span>':'<span class="tag">合成示例</span>')+'</div></div>').join("")||'<p class="muted" style="grid-column:1/-1">暂无视频，请导入或载入合成清单。</p>';$("stCount").textContent=items.length;$("stSize").textContent=fmtSize(items.reduce((s,x)=>s+(x.size||0),0));$("stDup").textContent=dup;$("stHd").textContent=items.filter(x=>["720P","1080P","4K"].includes(x.quality)).length;document.querySelectorAll(".item").forEach((card,index)=>{const x=filtered[index];card.addEventListener("click",()=>{if(x&&x.url){const p=$("playerWrap");$("player").src=x.url;p.style.display="block";$("player").play().catch(()=>{});}});});}
+function addFile(file){if(!file.type.startsWith("video/"))return;const item={name:file.name,format:file.type,size:file.size,duration:0,width:0,height:0,res:"读取中",quality:"读取中",url:URL.createObjectURL(file)};items.push(item);render();const v=document.createElement("video");v.preload="metadata";v.src=item.url;v.onloadedmetadata=()=>{item.duration=v.duration;item.width=v.videoWidth;item.height=v.videoHeight;item.res=resolution(v.videoWidth,v.videoHeight);item.quality=quality(v.videoWidth,v.videoHeight);render();};}
+function addSamples(){const specs=[{name:"子栖·药学可视化录屏.mp4",size:286*1024*1024,duration:1350,width:1920,height:1080},{name:"Python数据清洗操作演示.mp4",size:168*1024*1024,duration:820,width:1280,height:720},{name:"Python数据清洗操作演示.mp4",size:168*1024*1024,duration:820,width:1280,height:720},{name:"AIGC作品创作流程.mp4",size:742*1024*1024,duration:2480,width:3840,height:2160}];specs.forEach(s=>{items.push({name:s.name,format:"video/mp4",size:s.size,duration:s.duration,width:s.width,height:s.height,res:resolution(s.width,s.height),quality:quality(s.width,s.height),url:null});});render();toast("已载入 4 个合成视频清单");}
+$("dropzone").addEventListener("click",()=>$("fileInput").click());
+$("dropzone").addEventListener("dragover",e=>{e.preventDefault();$("dropzone").classList.add("drag");});
+$("dropzone").addEventListener("dragleave",()=>$("dropzone").classList.remove("drag"));
+$("dropzone").addEventListener("drop",e=>{e.preventDefault();$("dropzone").classList.remove("drag");Array.from(e.dataTransfer.files).forEach(addFile);});
+$("fileInput").addEventListener("change",e=>Array.from(e.target.files).forEach(addFile));
+$("sampleBtn").addEventListener("click",addSamples);
+$("clearBtn").addEventListener("click",()=>{items.forEach(x=>x.url&&URL.revokeObjectURL(x.url));items=[];$("player").src="";$("playerWrap").style.display="none";render();toast("已清空");});
+$("filter").addEventListener("input",render);
+$("exportJson").addEventListener("click",()=>{const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([JSON.stringify(items.map(({url,duplicate,...x})=>x),null,2)],{type:"application/json"}));a.download="video-audit.json";a.click();});
+$("exportCsv").addEventListener("click",()=>{const rows=[["name","format","size","duration","resolution","quality","duplicate"]].concat(items.map(x=>[x.name,x.format,x.size,x.duration,x.res,x.quality,x.duplicate?"是":"否"]));const csv=rows.map(r=>r.map(c=>'"'+String(c??"").replace(/"/g,'""')+'"').join(",")).join("\n");const a=document.createElement("a");a.href=URL.createObjectURL(new Blob(["\ufeff"+csv],{type:"text/csv;charset=utf-8"}));a.download="video-audit.csv";a.click();});
+render();
+</script>
+</body>
+</html>

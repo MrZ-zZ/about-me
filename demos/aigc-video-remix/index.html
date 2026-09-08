@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="zh-CN" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AIGC 视频再创作流水线 · 子栖</title>
+<style>
+  :root { color-scheme: dark; --bg:#0f172a; --panel:rgba(30,41,59,.86); --border:rgba(148,163,184,.3); --text:#f8fafc; --muted:#b6c2d4; --accent:#5eead4; --accent2:#38bdf8; }
+  * { box-sizing:border-box; }
+  body { margin:0; background:radial-gradient(circle at 85% 8%, rgba(56,189,248,.14), transparent 32rem), radial-gradient(circle at 15% 20%, rgba(94,234,212,.14), transparent 34rem), var(--bg); color:var(--text); font-family:"Segoe UI","Microsoft YaHei UI",system-ui,sans-serif; line-height:1.7; }
+  .wrap { max-width:960px; margin:0 auto; padding:40px 20px 64px; }
+  .badge { display:inline-block; border:1px solid var(--border); background:var(--panel); color:var(--accent); border-radius:999px; padding:4px 12px; font-size:12px; }
+  h1 { font-size:30px; margin:18px 0 6px; }
+  .lead { color:var(--muted); max-width:680px; }
+  .grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:16px; margin-top:28px; }
+  .card { background:var(--panel); border:1px solid var(--border); border-radius:16px; padding:18px; box-shadow:0 24px 70px rgba(2,6,23,.45); }
+  .card h2 { font-size:15px; margin:0 0 6px; color:var(--accent2); }
+  .card p { margin:0; color:var(--muted); font-size:13px; }
+  .frames { display:grid; grid-template-columns:repeat(auto-fit,minmax(120px,1fr)); gap:10px; }
+  .frame { aspect-ratio:16/10; border-radius:10px; border:1px solid var(--border); background:linear-gradient(135deg,rgba(94,234,212,.25),rgba(56,189,248,.25)); display:grid; place-items:center; color:var(--muted); font-size:12px; }
+  .step { display:flex; gap:12px; align-items:flex-start; }
+  .step .n { flex:0 0 26px; height:26px; display:grid; place-items:center; border-radius:8px; background:rgba(56,189,248,.14); color:var(--accent2); font-weight:700; }
+  .note { margin-top:24px; border-left:3px solid var(--accent); background:var(--panel); border-radius:0 12px 12px 0; padding:14px 16px; color:var(--muted); font-size:13px; }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <span class="badge">进阶交付 · 合成素材 · 脱敏演示</span>
+    <h1>AIGC 视频再创作流水线</h1>
+    <p class="lead">把长视频拆成关键帧与片段，结合 AIGC 做风格化再创作与节奏重排，输出适合社媒传播的短内容。本页使用渐变占位图，不包含任何真实视频素材。</p>
+
+    <div class="grid">
+      <div class="card"><h2>输入</h2><p>授权范围内的长视频 / 素材片段</p></div>
+      <div class="card"><h2>抽帧密度</h2><p>每 0.5–1 秒一帧</p></div>
+      <div class="card"><h2>AIGC 能力</h2><p>风格迁移 · 补帧 · 文案生成</p></div>
+      <div class="card"><h2>输出</h2><p>15–60 秒短视频分镜</p></div>
+    </div>
+
+    <div class="card" style="margin-top:24px;">
+      <h2>关键帧预览（合成占位）</h2>
+      <div class="frames" style="margin-top:10px;">
+        <div class="frame">原始帧</div>
+        <div class="frame">风格 A</div>
+        <div class="frame">风格 B</div>
+        <div class="frame">风格 C</div>
+        <div class="frame">重排</div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top:24px;">
+      <h2>流水线步骤</h2>
+      <div style="display:grid;gap:14px;margin-top:8px;">
+        <div class="step"><span class="n">1</span><p>导入授权素材，抽帧并生成元数据与时间轴。</p></div>
+        <div class="step"><span class="n">2</span><p>按场景切分片段，提取关键帧与转写要点。</p></div>
+        <div class="step"><span class="n">3</span><p>调用 AIGC 做风格化、补帧与文案生成。</p></div>
+        <div class="step"><span class="n">4</span><p>按节奏重排、配字幕并输出交付版本。</p></div>
+      </div>
+    </div>
+
+    <div class="note">说明：本页仅展示流程与合成结果，不提供下载与运行入口；真实项目需确认素材授权后再交付。</div>
+  </div>
+</body>
+</html>

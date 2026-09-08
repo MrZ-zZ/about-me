@@ -1,0 +1,191 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>子栖 · Python 词汇训练器</title>
+<style>
+:root {
+  --bg: #0b1120;
+  --panel: #111a2e;
+  --panel2: #0f172a;
+  --text: #f8fafc;
+  --muted: #a9b7cc;
+  --accent: #67e8f9;
+  --violet: #c4b5fd;
+  --green: #6ee7b7;
+  --danger: #fb7185;
+  --border: rgba(148, 163, 184, 0.22);
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0; min-height: 100vh; color: var(--text);
+  background:
+    radial-gradient(circle at 15% 10%, rgba(34, 211, 238, 0.12), transparent 28rem),
+    radial-gradient(circle at 85% 15%, rgba(168, 85, 247, 0.12), transparent 26rem),
+    var(--bg);
+  font-family: "Segoe UI", "Microsoft YaHei", system-ui, sans-serif;
+}
+.wrap { max-width: 900px; margin: 0 auto; padding: 32px 20px 60px; }
+h1 { margin: 0 0 8px; font-size: 30px; }
+.sub { color: var(--muted); line-height: 1.7; margin: 0; }
+.toolbar { display: flex; flex-wrap: wrap; gap: 10px; margin: 24px 0; }
+button {
+  border: 0; border-radius: 12px; padding: 10px 15px; cursor: pointer;
+  background: transparent; color: var(--text); border: 1px solid var(--border); font: inherit;
+}
+button.primary { background: var(--accent); color: #0b1120; border-color: transparent; font-weight: 600; }
+button.active { background: rgba(103, 232, 249, 0.14); border-color: var(--accent); }
+.card {
+  min-height: 300px; border: 1px solid var(--border); border-radius: 24px;
+  background: var(--panel); padding: 34px; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; cursor: pointer;
+  box-shadow: 0 24px 70px rgba(2, 6, 23, 0.45);
+}
+.card .category { color: var(--violet); font-size: 13px; letter-spacing: .12em; text-transform: uppercase; }
+.card .term { font-size: 42px; font-weight: 700; margin: 18px 0; font-family: Consolas, monospace; }
+.card .meaning { font-size: 18px; color: var(--muted); line-height: 1.7; min-height: 30px; }
+.card .hint { margin-top: 22px; color: var(--muted); font-size: 13px; }
+.progress { margin-top: 18px; height: 8px; border-radius: 99px; background: var(--panel2); overflow: hidden; }
+.progress span { display: block; height: 100%; background: linear-gradient(90deg, var(--accent), var(--violet)); width: 0%; transition: width .25s; }
+.answers { display: flex; justify-content: center; gap: 12px; margin-top: 18px; }
+.answers button { padding: 12px 24px; font-weight: 600; }
+.stats { display: flex; gap: 16px; justify-content: center; margin-top: 18px; color: var(--muted); font-size: 14px; }
+.note { margin-top: 22px; color: var(--muted); font-size: 13px; line-height: 1.7; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Python 词汇训练器</h1>
+  <p class="sub">自创词表，本地保存学习进度。认识、陌生和易错词分开统计，适合 Python 初学者边写代码边记英文。</p>
+
+  <div class="toolbar">
+    <button id="allBtn" class="active">全部</button>
+    <button id="mistakeBtn">易错词</button>
+    <button id="resetBtn">重置进度</button>
+  </div>
+
+  <div class="card" id="card">
+    <div class="category" id="category"></div>
+    <div class="term" id="term"></div>
+    <div class="meaning" id="meaning"></div>
+    <div class="hint">点击卡片翻面</div>
+  </div>
+
+  <div class="progress"><span id="bar"></span></div>
+  <div class="stats" id="stats"></div>
+  <div class="answers">
+    <button id="wrongBtn">不认识</button>
+    <button id="knownBtn" class="primary">认识</button>
+  </div>
+
+  <p class="note">词表为原创合成，仅作演示；不包含原 HTML，也不涉及第三方版权素材。</p>
+</div>
+
+<script>
+const words = [
+  ["variable", "变量", "用来存储数据并命名一个值", "基础"],
+  ["function", "函数", "一段可重复调用的代码块", "基础"],
+  ["argument", "参数", "调用函数时传入的值", "基础"],
+  ["return", "返回值", "函数执行后交回的结果", "基础"],
+  ["loop", "循环", "重复执行一段代码的结构", "控制流"],
+  ["condition", "条件", "根据真假决定分支执行", "控制流"],
+  ["boolean", "布尔值", "只有 True / False 两种值", "数据类型"],
+  ["integer", "整数", "不带小数点的数字类型", "数据类型"],
+  ["float", "浮点数", "带小数点的数字类型", "数据类型"],
+  ["string", "字符串", "由字符组成的文本数据", "数据类型"],
+  ["list", "列表", "有序、可变的一组数据", "容器"],
+  ["tuple", "元组", "有序、不可变的一组数据", "容器"],
+  ["dictionary", "字典", "由键值对组成的映射结构", "容器"],
+  ["set", "集合", "无序且元素唯一的容器", "容器"],
+  ["slice", "切片", "从序列中截取子序列", "容器"],
+  ["index", "索引", "元素在序列中的位置", "容器"],
+  ["exception", "异常", "程序运行中出现的错误对象", "错误处理"],
+  ["traceback", "回溯信息", "描述调用链和异常位置的诊断文本", "错误处理"],
+  ["module", "模块", "一个可导入的 Python 文件", "工程化"],
+  ["package", "包", "包含模块的目录组织方式", "工程化"],
+  ["virtualenv", "虚拟环境", "隔离项目依赖的本地环境", "工程化"],
+  ["dependency", "依赖", "项目运行所需的第三方包", "工程化"],
+  ["generator", "生成器", "按需产出值的惰性迭代对象", "进阶"],
+  ["decorator", "装饰器", "在不改原函数的情况下增强行为", "进阶"],
+  ["lambda", "匿名函数", "无名称的短小函数表达式", "进阶"],
+  ["comprehension", "推导式", "用简洁语法构造序列或集合", "进阶"],
+  ["iterator", "迭代器", "可被 next() 依次取值的对象", "进阶"],
+  ["recursion", "递归", "函数直接或间接调用自身", "进阶"],
+  ["encoding", "编码", "字符与字节之间的映射规则", "数据"],
+  ["csv", "逗号分隔值", "一种常见表格文本格式", "数据"],
+  ["json", "JSON", "轻量数据交换文本格式", "数据"],
+  ["dataframe", "数据框", "二维表格型数据结构", "数据"],
+  ["series", "序列", "一维带标签的数据结构", "数据"],
+  ["regex", "正则表达式", "描述字符串匹配规则的模式", "数据"],
+  ["api", "接口", "程序之间约定的通信方式", "工程化"],
+  ["request", "请求", "客户端向服务端发出的调用", "网络"],
+  ["response", "响应", "服务端返回给客户端的结果", "网络"],
+  ["crawler", "爬虫", "自动抓取网页数据的程序", "网络"],
+  ["database", "数据库", "结构化存储和管理数据的系统", "数据"],
+  ["query", "查询", "从数据源中检索数据的操作", "数据"]
+];
+
+const card = document.getElementById("card");
+const categoryEl = document.getElementById("category");
+const termEl = document.getElementById("term");
+const meaningEl = document.getElementById("meaning");
+const bar = document.getElementById("bar");
+const statsEl = document.getElementById("stats");
+
+let pool = words.map((w, i) => ({ id: i, term: w[0], meaning: w[1], hint: w[2], category: w[3] }));
+let mode = "all";
+let index = 0;
+let flipped = false;
+let mistakes = new Set(JSON.parse(localStorage.getItem("vocab-mistakes") || "[]"));
+
+function save() {
+  localStorage.setItem("vocab-mistakes", JSON.stringify([...mistakes]));
+}
+
+function currentPool() {
+  return mode === "mistake" ? pool.filter((w) => mistakes.has(w.id)) : pool;
+}
+
+function draw() {
+  const list = currentPool();
+  const total = list.length;
+  if (!total) {
+    categoryEl.textContent = "没有易错词";
+    termEl.textContent = mode === "mistake" ? "先把不认识的词标记出来" : "词表为空";
+    meaningEl.textContent = "点击「认识 / 不认识」继续训练。";
+    bar.style.width = "100%";
+    statsEl.textContent = "";
+    return;
+  }
+  index = Math.min(index, total - 1);
+  const word = list[index];
+  categoryEl.textContent = word.category;
+  termEl.textContent = word.term;
+  meaningEl.textContent = flipped ? word.meaning : "点击卡片查看释义";
+  card.querySelector(".hint").textContent = flipped ? word.hint : "点击卡片翻面";
+  bar.style.width = ((index + 1) / total * 100) + "%";
+  statsEl.textContent = `进度 ${index + 1}/${total} · 易错 ${mistakes.size} 个 · 共 ${pool.length} 词`;
+}
+
+function next(delta) {
+  const list = currentPool();
+  if (!list.length) return;
+  index = (index + delta + list.length) % list.length;
+  flipped = false;
+  draw();
+}
+
+card.addEventListener("click", () => { flipped = !flipped; draw(); });
+document.getElementById("allBtn").addEventListener("click", () => { mode = "all"; index = 0; flipped = false; setActive("allBtn"); draw(); });
+document.getElementById("mistakeBtn").addEventListener("click", () => { mode = "mistake"; index = 0; flipped = false; setActive("mistakeBtn"); draw(); });
+document.getElementById("resetBtn").addEventListener("click", () => { mistakes = new Set(); save(); draw(); });
+document.getElementById("knownBtn").addEventListener("click", () => { const list = currentPool(); if (list[index]) mistakes.delete(list[index].id); save(); next(1); });
+document.getElementById("wrongBtn").addEventListener("click", () => { const list = currentPool(); if (list[index]) mistakes.add(list[index].id); save(); next(1); });
+
+function setActive(id) {
+  ["allBtn", "mistakeBtn"].forEach((x) => document.getElementById(x).classList.toggle("active", x === id));
+}
+draw();
+</script>
+</body>
+</html>

@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>子栖 · 桌面文件整理模拟器</title>
+<style>
+:root{--bg:#070b14;--panel:#101829;--panel2:#0b1220;--line:#24314d;--text:#e6edf7;--muted:#8ea2bf;--cyan:#22d3ee;--purple:#a855f7;--green:#34d399;--yellow:#fbbf24;--red:#fb7185}
+*{box-sizing:border-box}
+body{margin:0;min-height:100vh;background:radial-gradient(circle at 20% 15%,rgba(168,85,247,.13),transparent 30rem),radial-gradient(circle at 85% 10%,rgba(34,211,238,.12),transparent 26rem),var(--bg);color:var(--text);font-family:"Segoe UI","Microsoft YaHei",system-ui,sans-serif}
+.wrap{width:min(980px,calc(100% - 32px));margin:0 auto;padding:32px 0 60px}
+.top{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;flex-wrap:wrap}
+h1{margin:0 0 8px;font-size:30px}
+.sub{margin:0;color:var(--muted);line-height:1.7}
+button{border:1px solid var(--line);border-radius:12px;padding:10px 14px;background:var(--panel2);color:var(--text);cursor:pointer;font:inherit}
+button:hover{border-color:var(--cyan)}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:20px;padding:18px;margin-top:20px;box-shadow:0 20px 60px rgba(0,0,0,.3)}
+.input-row{display:grid;grid-template-columns:1fr auto auto;gap:10px}
+input{width:100%;border:1px solid var(--line);border-radius:12px;background:var(--panel2);color:var(--text);padding:11px 13px;font:inherit;outline:none}
+input:focus{border-color:var(--cyan)}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:14px}
+.stat{background:var(--panel2);border:1px solid var(--line);border-radius:14px;padding:12px;text-align:center}
+.stat b{display:block;font-size:24px;color:var(--cyan)}
+.stat span{color:var(--muted);font-size:12px}
+.layout{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:14px}
+.folder{border:1px solid var(--line);border-radius:16px;background:var(--panel2);padding:12px}
+.folder h3{margin:0 0 10px;font-size:15px;color:var(--cyan)}
+.file-item{display:flex;justify-content:space-between;gap:8px;padding:9px 0;border-bottom:1px solid var(--line);font-size:13px}
+.file-item:last-child{border-bottom:0}
+.empty{color:var(--muted);font-size:13px;padding:12px 0}
+.tag{color:var(--purple);font-size:11px}
+.note{margin-top:20px;color:var(--muted);font-size:13px;line-height:1.7;border-left:3px solid var(--cyan);padding-left:12px}
+@media(max-width:720px){.input-row{grid-template-columns:1fr}.layout{grid-template-columns:1fr}.stats{grid-template-columns:1fr 1fr}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div><h1>桌面文件整理模拟器</h1><p class="sub">输入文件名，模拟按扩展名归档；支持批量示例、重名检测、防覆盖提示和导出归档结果。</p></div>
+    <button id="exportBtn">导出归档结果</button>
+  </header>
+
+  <section class="panel">
+    <div class="input-row">
+      <input id="fileInput" placeholder="例如：季度报告.xlsx" />
+      <button id="addBtn">添加文件</button>
+      <button id="sampleBtn">载入示例</button>
+    </div>
+    <div class="stats" id="stats"></div>
+  </section>
+
+  <div class="layout">
+    <section class="folder"><h3>待归档文件</h3><div id="pendingList"></div></section>
+    <section class="folder"><h3>归档结果</h3><div id="folderList"></div></section>
+  </div>
+
+  <div class="note">当前为浏览器模拟，不会移动真实文件。Python CLI 版本支持 dry-run、防覆盖、日志和错误恢复。</div>
+</div>
+
+<script>
+const extMap={'.jpg':'图片','.jpeg':'图片','.png':'图片','.gif':'图片','.webp':'图片','.svg':'图片','.pdf':'文档','.doc':'文档','.docx':'文档','.xls':'文档','.xlsx':'文档','.ppt':'文档','.pptx':'文档','.txt':'文档','.md':'文档','.py':'代码','.js':'代码','.ts':'代码','.html':'代码','.css':'代码','.json':'代码','.sql':'代码','.zip':'压缩包','.rar':'压缩包','.7z':'压缩包','.mp4':'视频','.mov':'视频','.mp3':'音频','.wav':'音频'};
+const demo=["季度报告.xlsx","产品主图.png","自动化脚本.py","会议记录.docx","资料.zip","产品演示.mp4","背景音乐.mp3","数据清洗.py","简历.pdf","项目封面.svg","README.md","打包文件.rar"];
+let files=[];
+function ext(name){const i=name.lastIndexOf('.');return i>=0?name.slice(i).toLowerCase():'';}
+function cat(name){return extMap[ext(name)]||'其他';}
+function group(){return files.reduce((acc,f)=>{const k=cat(f.name);(acc[k]??=[]).push(f);return acc;},{});}
+function add(name){
+  name=name.trim();if(!name)return;
+  if(files.some(f=>f.name.toLowerCase()===name.toLowerCase())){alert("文件名已存在，模拟器不会覆盖同名文件。");return;}
+  files.push({name});
+}
+function render(){
+  document.getElementById("pendingList").innerHTML=files.length?files.map(f=>'<div class="file-item"><span>'+f.name+'</span><span class="tag">'+cat(f.name)+'</span></div>').join(""):'<div class="empty">暂无待归档文件</div>';
+  const groups=group();
+  const cats=Object.keys(groups).sort();
+  document.getElementById("folderList").innerHTML=cats.length?cats.map(k=>'<div class="folder"><h3>'+k+'</h3>'+groups[k].map(f=>'<div class="file-item"><span>'+f.name+'</span><span class="tag">'+ext(f.name)+'</span></div>').join("")+'</div>').join(""):'<div class="empty">暂无归档结果</div>';
+  document.getElementById("stats").innerHTML=[
+    ["待归档",files.length],["分类数",cats.length],["防覆盖","已启用"]
+  ].map(([k,v])=>'<div class="stat"><b>'+v+'</b><span>'+k+'</span></div>').join("");
+}
+function exportResult(){
+  const groups=group();
+  const text=Object.entries(groups).map(([k,arr])=>k+"\n"+arr.map(f=>"  "+f.name).join("\n")).join("\n\n");
+  const blob=new Blob([text],{type:"text/plain;charset=utf-8"});const url=URL.createObjectURL(blob);const a=document.createElement("a");a.href=url;a.download="file_organize_result.txt";a.click();URL.revokeObjectURL(url);
+}
+document.getElementById("addBtn").addEventListener("click",()=>{add(document.getElementById("fileInput").value);document.getElementById("fileInput").value="";render();});
+document.getElementById("fileInput").addEventListener("keydown",e=>{if(e.key==="Enter"){add(document.getElementById("fileInput").value);document.getElementById("fileInput").value="";render();}});
+document.getElementById("sampleBtn").addEventListener("click",()=>{files=demo.map(name=>({name}));render();});
+document.getElementById("exportBtn").addEventListener("click",exportResult);
+render();
+</script>
+</body>
+</html>

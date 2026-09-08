@@ -1,0 +1,1 @@
+(globalThis.TURBOPACK||(globalThis.TURBOPACK=[])).push(["object"==typeof document?document.currentScript:void 0,93232,e=>{"use strict";var t=e.i(18050),o=e.i(71645);e.s(["default",0,function(){return(0,o.useEffect)(()=>{window.location.replace("/about-me/projects/")},[]),(0,t.jsx)("p",{style:{padding:24},children:"正在跳转到项目作品集…"})}])}]);

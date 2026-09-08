@@ -1,0 +1,1 @@
+(globalThis.TURBOPACK||(globalThis.TURBOPACK=[])).push(["object"==typeof document?document.currentScript:void 0,27005,t=>{"use strict";var e=t.i(18050),o=t.i(71645);t.s(["default",0,function(){return(0,o.useEffect)(()=>{window.location.replace("/about-me/about/")},[]),(0,e.jsx)("p",{style:{padding:24},children:"正在跳转到关于我…"})}])}]);

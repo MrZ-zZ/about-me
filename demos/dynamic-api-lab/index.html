@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>子栖 · 动态接口采集实验室</title>
+<style>
+:root{--bg:#0b1120;--panel:rgba(17,26,46,.85);--panel2:#0f172a;--text:#f8fafc;--muted:#a9b7cc;--accent:#67e8f9;--violet:#c4b5fd;--green:#6ee7b7;--warn:#fbbf24;--border:rgba(148,163,184,.22)}
+*{box-sizing:border-box}
+body{margin:0;min-height:100vh;color:var(--text);background:radial-gradient(circle at 15% 10%,rgba(34,211,238,.14),transparent 28rem),radial-gradient(circle at 85% 15%,rgba(168,85,247,.15),transparent 26rem),var(--bg);font-family:"Segoe UI","Microsoft YaHei",system-ui,sans-serif}
+.wrap{max-width:1180px;margin:0 auto;padding:36px 20px 64px}
+.badge{display:inline-flex;align-items:center;gap:8px;padding:8px 14px;border:1px solid rgba(103,232,249,.45);border-radius:999px;background:rgba(103,232,249,.08);color:#7deffd;font-size:13px}
+h1{margin:12px 0 8px;font-size:34px}
+.sub{margin:0;color:var(--muted);line-height:1.85}
+.panel{background:var(--panel);border:1px solid var(--border);border-radius:22px;padding:20px;margin-top:22px;box-shadow:0 24px 70px rgba(2,6,23,.45);backdrop-filter:blur(12px)}
+.panel-head{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:14px}
+.panel-title{font-weight:700;color:#cfe9ff}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+label{color:var(--muted);font-size:12px;display:flex;flex-direction:column;gap:6px}
+select,input{background:#0a111f;border:1px solid var(--border);border-radius:11px;color:var(--text);padding:10px 12px}
+.actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:14px}
+button{border:0;border-radius:12px;padding:11px 16px;background:var(--accent);color:#0b1120;font-weight:700;cursor:pointer}
+button.ghost{background:transparent;color:var(--text);border:1px solid var(--border)}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-top:16px}
+.stat{background:var(--panel2);border:1px solid var(--border);border-radius:16px;padding:14px}
+.stat b{display:block;font-size:22px;color:#7deffd}
+.stat span{color:var(--muted);font-size:12px}
+.progress{height:10px;border-radius:999px;background:#0a111f;overflow:hidden;margin-top:14px}
+.progress i{display:block;height:100%;width:0;background:linear-gradient(90deg,#22d3ee,#a855f7);transition:.3s}
+.split{display:grid;grid-template-columns:1fr 1.3fr;gap:16px;margin-top:20px}
+pre{background:#0a111f;border:1px solid var(--border);border-radius:14px;padding:14px;color:#bae6fd;font-size:12px;white-space:pre-wrap;max-height:420px;overflow:auto;font-family:Consolas,monospace}
+.list{max-height:420px;overflow:auto;display:grid;gap:8px}
+.item{background:var(--panel2);border:1px solid var(--border);border-radius:12px;padding:12px}
+.item b{color:#fff}
+.item p{margin:4px 0 0;color:var(--muted);font-size:12px}
+.tag{display:inline-block;margin-right:5px;padding:3px 7px;border-radius:8px;font-size:11px;background:rgba(103,232,249,.08);border:1px solid rgba(103,232,249,.25);color:#7deffd}
+.note{margin-top:20px;color:var(--muted);font-size:13px;line-height:1.7;border-left:3px solid var(--accent);padding-left:12px}
+.toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%) translateY(20px);background:#0f766e;border:1px solid #2dd4bf;color:#eafffb;padding:12px 18px;border-radius:999px;opacity:0;pointer-events:none;transition:.25s}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <span class="badge">Python 思路 · 本地 Mock API</span>
+  <h1>动态接口采集实验室</h1>
+  <p class="sub">模拟带分页参数的动态接口请求，观察 JSON 返回、分页进度和字段提取；数据全部为本地合成，不请求真实平台接口。</p>
+
+  <section class="panel">
+    <div class="panel-head"><span class="panel-title">接口参数</span><span class="muted">合成接口</span></div>
+    <div class="grid2">
+      <label>端点<select id="endpoint"><option value="tasks">/api/v1/tasks</option><option value="jobs">/api/v1/jobs</option><option value="insights">/api/v1/insights</option></select></label>
+      <label>关键词<input id="keyword" placeholder="例如：数据清洗" /></label>
+      <label>每页数量<select id="pageSize"><option value="5">5</option><option value="10">10</option><option value="20">20</option></select></label>
+      <label>采集页数<select id="pages"><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="5">5</option></select></label>
+      <label>模拟延迟<select id="delay"><option value="200">200ms</option><option value="500">500ms</option><option value="800">800ms</option></select></label>
+    </div>
+    <div class="actions">
+      <button id="runBtn">开始采集</button>
+      <button class="ghost" id="exportJson">导出 JSON</button>
+      <button class="ghost" id="exportCsv">导出 CSV</button>
+      <button class="ghost" id="clearBtn">清空</button>
+    </div>
+    <div class="progress"><i id="bar"></i></div>
+    <div class="stats">
+      <div class="stat"><b id="stPages">0</b><span>已采集页</span></div>
+      <div class="stat"><b id="stItems">0</b><span>总条目</span></div>
+      <div class="stat"><b id="stAvg">0</b><span>平均匹配度</span></div>
+      <div class="stat"><b id="stErrors">0</b><span>异常次数</span></div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head"><span class="panel-title">响应与提取结果</span><span id="summary" class="muted"></span></div>
+    <div class="split">
+      <pre id="json">等待请求…</pre>
+      <div class="list" id="list"></div>
+    </div>
+  </section>
+  <div class="note">接口响应为本地生成，延迟与分页逻辑用于演示采集流程，不包含真实个人或平台数据。</div>
+</div>
+<div class="toast" id="toast"></div>
+<script>
+let collected=[],errors=0;
+const $=id=>document.getElementById(id);
+const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+function toast(msg){const t=$("toast");t.textContent=msg;t.classList.add("show");setTimeout(()=>t.classList.remove("show"),1800);}
+const dataset=[
+  {title:"Python 数据清洗脚本",category:"数据整理",budget:"300-600 元",score:88},
+  {title:"药店月度经营报告",category:"数据分析",budget:"800-1500 元",score:94},
+  {title:"CSV 批量合并工具",category:"自动化",budget:"200-400 元",score:80},
+  {title:"招聘市场字段提取",category:"采集",budget:"500-1000 元",score:86},
+  {title:"经营数据大屏制作",category:"可视化",budget:"1000-3000 元",score:95},
+  {title:"本地文件智能归档",category:"自动化",budget:"300-500 元",score:76},
+  {title:"AIGC 海报生成流程",category:"AI 内容",budget:"400-800 元",score:90},
+  {title:"接口响应格式清洗",category:"接口开发",budget:"600-1200 元",score:84},
+  {title:"自动化日报模板",category:"自动化",budget:"250-450 元",score:72},
+  {title:"医药流向数据解读",category:"数据分析",budget:"1200-2500 元",score:98}
+];
+function mockFetch(endpoint,keyword,page,pageSize,delay){return new Promise(resolve=>{setTimeout(()=>{const filtered=dataset.filter(x=>!keyword||[x.title,x.category,x.budget].some(v=>v.includes(keyword)));const totalPages=Math.max(1,Math.ceil(filtered.length/pageSize));const items=filtered.slice((page-1)*pageSize,page*pageSize).map((x,i)=>({id:(page-1)*pageSize+i+1,title:x.title,category:x.category,budget:x.budget,score:Math.min(99,x.score+Math.round(Math.random()*4)),page}));resolve({code:0,message:"ok",endpoint,page,totalPages,items});},delay);});}
+async function run(){const endpoint=$("endpoint").value,keyword=$("keyword").value.trim(),pageSize=+$("pageSize").value,pages=+$("pages").value,delay=+$("delay").value;collected=[];errors=0;$("bar").style.width="0%";$("list").innerHTML="";$("json").textContent="请求中…";for(let p=1;p<=pages;p++){const res=await mockFetch(endpoint,keyword,p,pageSize,delay);if(p%4===0){errors++;$("json").textContent=JSON.stringify({code:500,message:"模拟异常，重试后继续",page:p},null,2);await new Promise(r=>setTimeout(r,220));}collected.push(...res.items);$("bar").style.width=Math.round(p/pages*100)+"%";$("json").textContent=JSON.stringify(res,null,2);render(res);}$("stPages").textContent=pages;$("stItems").textContent=collected.length;$("stAvg").textContent=collected.length?Math.round(collected.reduce((s,x)=>s+x.score,0)/collected.length):0;$("stErrors").textContent=errors;toast("采集完成，共 "+collected.length+" 条");}
+function render(res){$("summary").textContent="当前第 "+(res&&res.page||0)+" 页，已累计 "+collected.length+" 条";$("list").innerHTML=collected.map(x=>'<div class="item"><b>'+esc(x.title)+'</b><p><span class="tag">'+esc(x.category)+'</span><span class="tag">'+esc(x.budget)+'</span></p><p>ID '+x.id+' · 匹配度 '+x.score+' · 第 '+x.page+' 页</p></div>').join("");}
+$("runBtn").addEventListener("click",run);
+$("clearBtn").addEventListener("click",()=>{collected=[];errors=0;$("json").textContent="等待请求…";$("list").innerHTML="";$("bar").style.width="0%";$("stPages").textContent="0";$("stItems").textContent="0";$("stAvg").textContent="0";$("stErrors").textContent="0";toast("已清空");});
+$("exportJson").addEventListener("click",()=>{const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([JSON.stringify(collected,null,2)],{type:"application/json"}));a.download="api-results.json";a.click();});
+$("exportCsv").addEventListener("click",()=>{const rows=[["id","title","category","budget","score","page"]].concat(collected.map(x=>[x.id,x.title,x.category,x.budget,x.score,x.page]));const csv=rows.map(r=>r.map(c=>'"'+String(c??"").replace(/"/g,'""')+'"').join(",")).join("\n");const a=document.createElement("a");a.href=URL.createObjectURL(new Blob(["\ufeff"+csv],{type:"text/csv;charset=utf-8"}));a.download="api-results.csv";a.click();});
+run();
+</script>
+</body>
+</html>

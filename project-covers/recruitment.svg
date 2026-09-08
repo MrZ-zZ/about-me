@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="400" viewBox="0 0 800 400">
+  <defs><linearGradient id="g" x1="0" x2="1" y1="0" y2="1"><stop stop-color="#0b1220"/><stop offset="1" stop-color="#172033"/></linearGradient></defs>
+  <rect width="800" height="400" fill="url(#g)"/>
+  <rect x="100" y="230" width="140" height="120" rx="10" fill="#1e293b"/>
+  <rect x="260" y="160" width="140" height="190" rx="10" fill="#1e293b"/>
+  <rect x="420" y="110" width="140" height="240" rx="10" fill="#1e293b"/>
+  <rect x="580" y="180" width="140" height="170" rx="10" fill="#1e293b"/>
+  <path d="M90 330 L740 120" stroke="#a855f7" stroke-width="5" opacity="0.55"/>
+  <text x="70" y="70" fill="#e6edf7" font-size="30" font-family="Segoe UI,Microsoft YaHei">招聘市场数据分析</text>
+</svg>

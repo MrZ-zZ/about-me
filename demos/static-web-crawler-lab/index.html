@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>子栖 · 静态网页采集实验室</title>
+<style>
+:root{--bg:#0b1120;--panel:rgba(17,26,46,.85);--panel2:#0f172a;--text:#f8fafc;--muted:#a9b7cc;--accent:#67e8f9;--violet:#c4b5fd;--green:#6ee7b7;--warn:#fbbf24;--border:rgba(148,163,184,.22)}
+*{box-sizing:border-box}
+body{margin:0;min-height:100vh;color:var(--text);background:radial-gradient(circle at 15% 10%,rgba(34,211,238,.14),transparent 28rem),radial-gradient(circle at 85% 15%,rgba(168,85,247,.15),transparent 26rem),var(--bg);font-family:"Segoe UI","Microsoft YaHei",system-ui,sans-serif}
+.wrap{max-width:1180px;margin:0 auto;padding:36px 20px 64px}
+.badge{display:inline-flex;align-items:center;gap:8px;padding:8px 14px;border:1px solid rgba(103,232,249,.45);border-radius:999px;background:rgba(103,232,249,.08);color:#7deffd;font-size:13px}
+h1{margin:12px 0 8px;font-size:34px}
+.sub{margin:0;color:var(--muted);line-height:1.85}
+.panel{background:var(--panel);border:1px solid var(--border);border-radius:22px;padding:20px;margin-top:22px;box-shadow:0 24px 70px rgba(2,6,23,.45);backdrop-filter:blur(12px)}
+.panel-head{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:14px}
+.panel-title{font-weight:700;color:#cfe9ff}
+textarea{width:100%;min-height:190px;background:#0a111f;border:1px solid var(--border);color:#dbeafe;border-radius:14px;padding:14px;font-family:Consolas,monospace;font-size:13px;line-height:1.6;resize:vertical}
+.actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:14px}
+button{border:0;border-radius:12px;padding:11px 16px;background:var(--accent);color:#0b1120;font-weight:700;cursor:pointer}
+button.ghost{background:transparent;color:var(--text);border:1px solid var(--border)}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-top:16px}
+.stat{background:var(--panel2);border:1px solid var(--border);border-radius:16px;padding:14px}
+.stat b{display:block;font-size:22px;color:#7deffd}
+.stat span{color:var(--muted);font-size:12px}
+.progress{height:10px;border-radius:999px;background:#0a111f;overflow:hidden;margin-top:14px}
+.progress i{display:block;height:100%;width:0;background:linear-gradient(90deg,#22d3ee,#a855f7);transition:.3s}
+.toolbar{display:flex;flex-wrap:wrap;gap:12px;align-items:center;margin:14px 0}
+.toolbar input{flex:1;min-width:220px;background:#0a111f;border:1px solid var(--border);border-radius:11px;color:var(--text);padding:10px 12px}
+.table-wrap{max-height:420px;overflow:auto;border:1px solid var(--border);border-radius:16px}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th,td{padding:10px 12px;text-align:left;border-bottom:1px solid rgba(148,163,184,.14)}
+th{position:sticky;top:0;background:#101b30;color:#9ec7ff}
+.tag{display:inline-block;padding:3px 7px;border-radius:8px;font-size:11px;background:rgba(103,232,249,.08);border:1px solid rgba(103,232,249,.25);color:#7deffd}
+.note{margin-top:20px;color:var(--muted);font-size:13px;line-height:1.7;border-left:3px solid var(--accent);padding-left:12px}
+.toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%) translateY(20px);background:#0f766e;border:1px solid #2dd4bf;color:#eafffb;padding:12px 18px;border-radius:999px;opacity:0;pointer-events:none;transition:.25s}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <span class="badge">Python 思路 · 本地静态解析</span>
+  <h1>静态网页采集实验室</h1>
+  <p class="sub">输入本地合成 HTML，或模拟批量采集多个演示页面，提取标题、链接、图片地址与正文，统计字段并导出清单。不发送网络请求，不针对真实站点。</p>
+
+  <section class="panel">
+    <div class="panel-head"><span class="panel-title">页面解析</span><span class="muted">本地 HTML</span></div>
+    <textarea id="source" placeholder="在此粘贴 HTML，或点击“载入合成页面”"></textarea>
+    <div class="actions">
+      <button id="parseBtn">解析 HTML</button>
+      <button class="ghost" id="batchBtn">模拟采集 5 页</button>
+      <button class="ghost" id="sampleBtn">载入合成页面</button>
+      <button class="ghost" id="clearBtn">清空</button>
+    </div>
+    <div class="progress"><i id="bar"></i></div>
+    <div class="stats">
+      <div class="stat"><b id="stPages">0</b><span>已解析页面</span></div>
+      <div class="stat"><b id="stLinks">0</b><span>链接数量</span></div>
+      <div class="stat"><b id="stImgs">0</b><span>图片地址</span></div>
+      <div class="stat"><b id="stText">0</b><span>正文片段</span></div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head"><span class="panel-title">提取结果</span><span id="summary" class="muted"></span></div>
+    <div class="toolbar"><input id="filter" placeholder="按类型、文本或地址筛选" /></div>
+    <div class="table-wrap"><table id="table"><thead><tr><th>类型</th><th>文本</th><th>地址 / 内容</th><th>来源页</th></tr></thead><tbody></tbody></table></div>
+  </section>
+  <div class="note">合成页面均为虚构内容，仅用于演示 HTML 解析与批量提取流程。</div>
+</div>
+<div class="toast" id="toast"></div>
+<script>
+let results=[],pages=0;
+const $=id=>document.getElementById(id);
+const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+function toast(msg){const t=$("toast");t.textContent=msg;t.classList.add("show");setTimeout(()=>t.classList.remove("show"),1800);}
+function parseHtml(html,pageName){const doc=new DOMParser().parseFromString(html,"text/html");const out=[];doc.querySelectorAll("a").forEach(a=>{const t=(a.textContent||"").trim()||"未命名链接";if(t)out.push({type:"链接",text:t,value:a.getAttribute("href")||"#",page:pageName});});doc.querySelectorAll("img").forEach(img=>{out.push({type:"图片",text:img.getAttribute("alt")||"无替代文本",value:img.getAttribute("src")||"",page:pageName});});doc.querySelectorAll("h1,h2,h3").forEach(h=>{const t=(h.textContent||"").trim();if(t)out.push({type:"标题",text:t,value:h.tagName.toLowerCase(),page:pageName});});doc.querySelectorAll("p,li").forEach(p=>{const t=(p.textContent||"").trim().slice(0,80);if(t)out.push({type:"正文",text:t,value:"",page:pageName});});return out;}
+function render(){const kw=$("filter").value.trim().toLowerCase();const filtered=results.filter(x=>!kw||[x.type,x.text,x.value,x.page].some(v=>(v||"").toLowerCase().includes(kw)));$("summary").textContent=filtered.length+" / "+results.length+" 条";$("table").innerHTML='<thead><tr><th>类型</th><th>文本</th><th>地址 / 内容</th><th>来源页</th></tr></thead><tbody>'+(filtered.slice(0,200).map(x=>'<tr><td><span class="tag">'+esc(x.type)+'</span></td><td>'+esc(x.text)+'</td><td>'+esc(x.value||"-")+'</td><td>'+esc(x.page)+'</td></tr>').join("")||'<tr><td colspan="4">暂无结果</td></tr>')+'</tbody>';$("stPages").textContent=pages;$("stLinks").textContent=results.filter(x=>x.type==="链接").length;$("stImgs").textContent=results.filter(x=>x.type==="图片").length;$("stText").textContent=results.filter(x=>x.type==="正文").length;}
+function samplePage(i){const names=["药学可视化笔记","Python 数据处理记录","本地自动化脚本集"];const n=names[i%names.length];return '<!doctype html><html><head><title>'+n+'</title></head><body><h1>'+n+'</h1><p>这是一个用于演示静态页面解析的合成页面，内容与数据均为虚构。</p><a href="/demo/'+(i+1)+'">阅读笔记</a><a href="/code/python-'+(i+1)+'">查看代码</a><img alt="合成示意图" src="/assets/demo-'+(i+1)+'.svg"><h2>关键技术点</h2><ul><li>使用 Python 完成数据处理与可视化</li><li>输出 CSV 或 HTML 报告</li></ul></body></html>';}
+async function parseCurrent(){const html=$("source").value.trim();if(!html)return toast("请先输入 HTML");results=results.concat(parseHtml(html,"当前页面"));pages++;render();toast("解析完成，新增 "+results.length+" 条记录");}
+async function runBatch(){const total=5;$("bar").style.width="0%";results=[];pages=0;for(let i=0;i<total;i++){await new Promise(r=>setTimeout(r,180));results=results.concat(parseHtml(samplePage(i),"演示页面 "+(i+1)));pages++;$("bar").style.width=Math.round((i+1)/total*100)+"%";render();}$("source").value=samplePage(0);toast("已模拟采集 5 个合成页面");}
+$("parseBtn").addEventListener("click",parseCurrent);
+$("batchBtn").addEventListener("click",runBatch);
+$("sampleBtn").addEventListener("click",()=>{$("source").value=samplePage(0);toast("已载入合成页面");});
+$("clearBtn").addEventListener("click",()=>{results=[];pages=0;$("source").value="";$("bar").style.width="0%";render();toast("已清空");});
+$("filter").addEventListener("input",render);
+</script>
+</body>
+</html>

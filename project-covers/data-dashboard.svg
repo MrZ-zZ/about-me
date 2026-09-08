@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="400" viewBox="0 0 800 400">
+  <defs><linearGradient id="g" x1="0" x2="1" y1="0" y2="1"><stop stop-color="#0b1220"/><stop offset="1" stop-color="#172033"/></linearGradient></defs>
+  <rect width="800" height="400" fill="url(#g)"/>
+  <circle cx="120" cy="90" r="160" fill="#22d3ee" opacity="0.10"/>
+  <circle cx="680" cy="320" r="180" fill="#a855f7" opacity="0.10"/>
+  <rect x="110" y="230" width="150" height="110" rx="12" fill="#1e293b"/>
+  <rect x="280" y="180" width="150" height="160" rx="12" fill="#1e293b"/>
+  <rect x="450" y="120" width="150" height="220" rx="12" fill="#1e293b"/>
+  <rect x="620" y="260" width="150" height="80" rx="12" fill="#1e293b"/>
+  <path d="M90 340 L770 120" stroke="#22d3ee" stroke-width="4" opacity="0.6"/>
+  <text x="70" y="70" fill="#e6edf7" font-size="30" font-family="Segoe UI,Microsoft YaHei">数据可视化大屏</text>
+</svg>
